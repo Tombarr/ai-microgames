@@ -12,6 +12,7 @@ const GAME_LIST: Array[String] = [
 	"flappy_bird",
 	"geo_stacker",
 	"infinite_jump2",
+	"loop_connect",
 	"money_grabber",
 	"sample_ai_game",
 ]

@@ -1,0 +1,41 @@
+{
+  "title": "Loop Connect",
+  "description": "A zen-like minimalist puzzle where you rotate pipe segments to complete satisfying loops in just 5 seconds. Pure pattern recognition meets quick thinking.",
+  "tags": [
+    "puzzle",
+    "minimalist",
+    "zen",
+    "pipes",
+    "logic",
+    "quick-thinking",
+    "pattern-recognition",
+    "black-and-white"
+  ],
+  "seo_keywords": [
+    "pipe puzzle game",
+    "loop connection puzzle",
+    "minimalist puzzle game",
+    "5 second puzzle",
+    "pattern recognition game",
+    "zen puzzle",
+    "quick puzzle game",
+    "pipe rotation game",
+    "logic puzzle",
+    "microgame"
+  ],
+  "difficulty": "Medium",
+  "genre": "Puzzle / Logic",
+  "playtime": "5 seconds per round",
+  "controls": "Mouse/Touch or Keyboard",
+  "features": [
+    "4x4 grid with 5 pipe types",
+    "5 handcrafted puzzles",
+    "Minimalist black & white aesthetic",
+    "Satisfying rotation animations",
+    "Progressive difficulty (1x-5x speed)",
+    "Pure pattern recognition challenge"
+  ],
+  "og_image": "assets/og_image.png",
+  "one_liner": "Complete the loop. Find zen in 5 seconds.",
+  "tagline": "Where minimalist design meets maximum challenge"
+}
