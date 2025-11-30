@@ -5,7 +5,9 @@ An AI-generated microgaming platform built with Godot 4.
 ## 🎮 Available Games
 
 ### [Cyber Cleanup](games/micro_sokoban/README.md)
-*Contain the radioactive core before the meltdown begins!*
+
+_Contain the radioactive core before the meltdown begins!_
+
 - **Genre:** Puzzle / Sokoban
 - **Status:** Playable
 - **Controls:** Arrow Keys
@@ -13,10 +15,12 @@ An AI-generated microgaming platform built with Godot 4.
 ## 🚀 How to Play
 
 ### In Godot Editor
+
 1. Open this project in Godot 4.5+.
 2. Press **F5** (Play) to start the default game (Cyber Cleanup).
 
 ### Web Export (HTML5)
+
 This project is pre-configured for Web export.
 
 1. Ensure you have **Export Templates** installed for Godot 4.5.1.
@@ -24,7 +28,8 @@ This project is pre-configured for Web export.
 2. Click `Project > Export...`.
 3. Select the **Web** preset.
 4. Click **Export Project** and save to `builds/web/index.html`.
-5. Run the generated HTML file in a local web server (e.g., `python3 -m http.server` in the build directory).
+5. Run the generated HTML file in a local web server (e.g., `python3 -m http.server` in the build
+   directory).
 
 ## ⚙️ Project Configuration
 
