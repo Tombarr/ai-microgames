@@ -143,3 +143,5 @@ vite.config.ts.timestamp-*
 *.translation
 /export_presets.cfg
 *.tmp
+*.import
+*.uid
