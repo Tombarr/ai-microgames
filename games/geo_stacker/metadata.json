@@ -1,0 +1,6 @@
+{
+  "title": "GeoStacker",
+  "description": "A fast-paced 2D block stacking game where you must stack vibrant, geometric shapes to reach a target height before time runs out.",
+  "tags": ["stacking", "puzzle", "shapes", "colorful"],
+  "og_image": "assets/og_image.png"
+}
