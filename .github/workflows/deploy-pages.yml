@@ -1,0 +1,87 @@
+name: Deploy to GitHub Pages
+
+env:
+  GODOT_VERSION: 4.5.1
+  PROJECT_PATH: .
+  EXPORT_NAME: MicroGamez
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build for Web
+    runs-on: ubuntu-24.04 # Use 24.04 with godot 4+
+    container:
+      image: barichello/godot-ci:4.5.1
+
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Install dependencies
+        run: |
+          apt-get update && apt-get install -y npm binaryen libfontconfig1
+          npm install -g html-minifier-terser clean-css-cli terser
+
+      - name: Setup Export Templates
+        run: |
+          mkdir -v -p ~/.local/share/godot/export_templates
+          ln -s /root/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable
+
+      - name: Build
+        run: |
+          mkdir -p builds/web
+          godot --headless --path ${{ env.PROJECT_PATH }} --export-release "Web" builds/web/index.html
+
+      - name: Minify assets
+        run: |
+          # Minify HTML
+          for f in builds/web/*.html; do
+            html-minifier-terser --collapse-whitespace --remove-comments --minify-css true --minify-js true "$f" -o "$f"
+          done
+          # Minify CSS
+          for f in builds/web/*.css; do
+            [ -f "$f" ] && cleancss -o "$f" "$f"
+          done
+          # Minify JS
+          for f in builds/web/*.js; do
+            [ -f "$f" ] && terser "$f" -o "$f" --compress --mangle
+          done
+          # Minify WASM binaries (enable all features, skip on failure)
+          for f in builds/web/*.wasm; do
+            if [ -f "$f" ]; then
+              wasm-opt -Oz --all-features "$f" -o "$f.opt" && mv "$f.opt" "$f" || echo "Skipping WASM optimization for $f"
+            fi
+          done
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          name: web
+          path: builds/web
+
+  deploy:
+    name: Deploy to Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
