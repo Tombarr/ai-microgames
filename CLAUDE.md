@@ -1,10 +1,12 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this
+repository.
 
 ## Project Overview
 
-WarioWare-style microgame platform. Each game is 5 seconds, pass/fail outcome, with progressive difficulty via speed multiplier (1x-5x).
+WarioWare-style microgame platform. Each game is 5 seconds, pass/fail outcome, with progressive
+difficulty via speed multiplier (1x-5x).
 
 **Stack**: Godot 4.5.1 (GDScript 2.0)
 
@@ -21,6 +23,7 @@ godot4 -e project.godot
 ## Architecture
 
 ### Class Hierarchy
+
 ```
 Node2D
 └── Microgame (shared/scripts/microgame.gd)
@@ -30,6 +33,7 @@ Node2D
 ```
 
 ### Director (shared/scripts/director.gd)
+
 - Scans `games/` for folders with `main.tscn`
 - Loads random game each round
 - Manages lives (3), score, speed multiplier
@@ -39,7 +43,9 @@ Node2D
 - Pass if score > 0, fail if score = 0
 
 ### Game Structure
+
 Each game in `games/[name]/`:
+
 - `main.gd` - Extends `Microgame`
 - `main.tscn` - Scene file (root node attached to main.gd)
 - `assets/` - Game-specific resources (optional)
@@ -47,6 +53,7 @@ Each game in `games/[name]/`:
 ## Critical Patterns
 
 ### Speed Multiplier
+
 ```gdscript
 # CORRECT: Multiply speed, then delta
 velocity * speed_multiplier * delta
@@ -55,10 +62,10 @@ velocity * speed_multiplier * delta
 velocity * delta * speed_multiplier
 ```
 
-Apply to: velocities, spawn rates, timers
-Never apply to: collision shapes, sizes, delta itself
+Apply to: velocities, spawn rates, timers Never apply to: collision shapes, sizes, delta itself
 
 ### Game Lifecycle
+
 ```gdscript
 extends Microgame
 
@@ -98,6 +105,7 @@ func _process(delta):
 ```
 
 ### Win/Lose Logic
+
 - **Win**: Call `add_score(positive_value)` then `end_game()` - game logic stops immediately
 - **Lose**: Call `end_game()` with score still at 0 - game logic stops immediately
 - **After end_game()**: Set `game_ended = true` to stop processing, but let full 5-second timer run
@@ -105,6 +113,7 @@ func _process(delta):
 - Director checks: `score > 0` = PASS, `score == 0` = FAIL
 
 ### Common Mistakes
+
 1. Not setting `instruction` in `_ready()`
 2. Forgetting to call `super._ready()`
 3. Wrong speed_multiplier order (multiplying delta first)
@@ -127,19 +136,33 @@ See **GAME_REQUIREMENTS.md** for complete spec.
 ## Workflow
 
 ### Creating a Game
+
 1. Create folder: `games/[name]/`
 2. Create `main.gd` extending `Microgame`
 3. Create `main.tscn` with root Node2D, attach main.gd script
 4. In `_ready()`: set `instruction`, call `super._ready()`, setup game
 5. In `_process(delta)`: apply `speed_multiplier` to all speeds, check timeout
 6. Call `add_score()` and `end_game()` based on outcome
+7. **Add game to `GAME_LIST`** in `shared/scripts/director.gd` (required for web export)
+
+### Git Hooks Setup
+
+Run once after cloning to enable pre-commit validation:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+The pre-commit hook verifies all games in `games/` are listed in `GAME_LIST`.
 
 ### Testing
+
 Director auto-discovers games with `main.tscn` in `games/` folder. Just run the project.
 
 ## Examples
 
 Reference implementations:
+
 - `games/micro_sokoban/` - Grid-based puzzle with scene nodes
 - `games/money_grabber/` - Collection game with programmatic spawning
 - `games/sample_ai_game/` - Minimal tap-target template
