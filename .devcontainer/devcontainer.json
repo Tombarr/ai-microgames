@@ -1,0 +1,22 @@
+{
+    "name": "Godot Microgames Platform",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "features": {
+        "ghcr.io/devcontainers/features/git:1": {}
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "geequlim.godot-tools"
+            ],
+            "settings": {
+                "godotTools.editorPath.linux": "/usr/local/bin/godot"
+            }
+        }
+    },
+    "forwardPorts": [8000, 8080, 6005],
+    "postCreateCommand": "setup-godot-templates",
+    "remoteUser": "vscode"
+}
