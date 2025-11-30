@@ -1,0 +1,105 @@
+#!/bin/bash
+#
+# Pre-commit hook to verify all games in games/ are listed in GAME_LIST
+#
+
+DIRECTOR_FILE="shared/scripts/director.gd"
+GAMES_DIR="games"
+
+# Check if director.gd exists
+if [ ! -f "$DIRECTOR_FILE" ]; then
+    echo "Warning: $DIRECTOR_FILE not found, skipping GAME_LIST check"
+    exit 0
+fi
+
+# Find all game folders (directories with main.tscn)
+games_on_disk=()
+for dir in "$GAMES_DIR"/*/; do
+    if [ -f "${dir}main.tscn" ]; then
+        game_name=$(basename "$dir")
+        games_on_disk+=("$game_name")
+    fi
+done
+
+# Extract GAME_LIST from director.gd
+games_in_list=()
+in_game_list=false
+while IFS= read -r line; do
+    # Check if we're entering the GAME_LIST array
+    if [[ "$line" =~ ^const\ GAME_LIST ]]; then
+        in_game_list=true
+        continue
+    fi
+    
+    # Check if we're exiting the array
+    if $in_game_list && [[ "$line" =~ ^\] ]]; then
+        break
+    fi
+    
+    # Extract game names from the array
+    if $in_game_list; then
+        # Match quoted strings like "box_pusher" or 'box_pusher'
+        if [[ "$line" =~ \"([^\"]+)\" ]]; then
+            games_in_list+=("${BASH_REMATCH[1]}")
+        fi
+    fi
+done < "$DIRECTOR_FILE"
+
+# Check for games on disk that aren't in GAME_LIST
+missing_games=()
+for game in "${games_on_disk[@]}"; do
+    found=false
+    for listed in "${games_in_list[@]}"; do
+        if [ "$game" = "$listed" ]; then
+            found=true
+            break
+        fi
+    done
+    if ! $found; then
+        missing_games+=("$game")
+    fi
+done
+
+# Check for games in GAME_LIST that don't exist on disk
+extra_games=()
+for listed in "${games_in_list[@]}"; do
+    if [ ! -d "$GAMES_DIR/$listed" ] || [ ! -f "$GAMES_DIR/$listed/main.tscn" ]; then
+        extra_games+=("$listed")
+    fi
+done
+
+# Report errors
+has_error=false
+
+if [ ${#missing_games[@]} -gt 0 ]; then
+    echo "ERROR: The following games are in $GAMES_DIR but not in GAME_LIST:"
+    for game in "${missing_games[@]}"; do
+        echo "  - $game"
+    done
+    echo ""
+    echo "Add them to GAME_LIST in $DIRECTOR_FILE:"
+    echo "  const GAME_LIST: Array[String] = ["
+    for game in "${games_on_disk[@]}"; do
+        echo "      \"$game\","
+    done
+    echo "  ]"
+    echo ""
+    has_error=true
+fi
+
+if [ ${#extra_games[@]} -gt 0 ]; then
+    echo "ERROR: The following games are in GAME_LIST but don't exist in $GAMES_DIR:"
+    for game in "${extra_games[@]}"; do
+        echo "  - $game"
+    done
+    echo ""
+    echo "Remove them from GAME_LIST in $DIRECTOR_FILE or create the game."
+    echo ""
+    has_error=true
+fi
+
+if $has_error; then
+    exit 1
+fi
+
+exit 0

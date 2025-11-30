@@ -1,10 +1,15 @@
 extends Microgame
 
+# Sound effects
+const SFX_WIN = preload("res://shared/assets/sfx_win.wav")
+const SFX_LOSE = preload("res://shared/assets/sfx_lose.wav")
+
 var target: Area2D
 var speed: float = 200.0
 var direction: Vector2
 var viewport_size: Vector2
 var time_elapsed: float = 0.0
+var game_ended: bool = false
 const GAME_DURATION: float = 5.0
 
 func _ready():
@@ -45,6 +50,17 @@ func _ready():
 	# Random direction
 	direction = Vector2(randf_range(-1, 1), randf_range(-1, 1)).normalized()
 
+	# Setup audio
+	var sfx_win = AudioStreamPlayer.new()
+	sfx_win.name = "sfx_win"
+	sfx_win.stream = SFX_WIN
+	add_child(sfx_win)
+
+	var sfx_lose = AudioStreamPlayer.new()
+	sfx_lose.name = "sfx_lose"
+	sfx_lose.stream = SFX_LOSE
+	add_child(sfx_lose)
+
 	print("Sample Game Started: TAP THE TARGET!")
 
 func _process(delta):
@@ -55,8 +71,14 @@ func _process(delta):
 
 	# Timeout check
 	if time_elapsed >= GAME_DURATION:
-		add_score(0)
-		end_game()
+		if not game_ended:
+			$sfx_lose.play()
+			end_game()
+			game_ended = true
+		return
+
+	# Stop game logic after game ends
+	if game_ended:
 		return
 
 	# Move target with Speed Multiplier
@@ -80,6 +102,10 @@ func _process(delta):
 		direction.y *= -1
 
 func _input(event):
+	# Ignore input after game ends
+	if game_ended:
+		return
+
 	if not is_instance_valid(target):
 		return
 
@@ -94,6 +120,8 @@ func _input(event):
 	# Check distance to target
 	if pos.distance_to(target.position) < 40:
 		add_score(100)
+		$sfx_win.play()
 		end_game()
+		game_ended = true
 		print("TARGET HIT!")
 		target.queue_free()

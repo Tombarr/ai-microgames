@@ -19,8 +19,8 @@ We implement a **Server-Side Generation Strategy** to ensure quality, security, 
 - **Orchestration**:
   1.  **Code Generation (LLM)**: **Google Gemini 1.5 Flash** (via AI Studio) generates a single
       GDScript file extending `res://shared/scripts/microgame.gd`.
-      - _Constraint_: The script must build its scene programmatically in `_ready()` or use a
-        .tscn scene file.
+      - _Constraint_: The script must build its scene programmatically in `_ready()` or use a .tscn
+        scene file.
   2.  **Asset Generation**:
       - **Visuals**: **Gemini 1.5 Flash** (Text-to-SVG) for instant vector graphics, or **Imagen 3**
         (via Vertex AI/Gemini API) for raster sprites.
@@ -37,8 +37,8 @@ Running AI code carries risks. We implement a "Defense in Depth" approach:
 - **Layer 1: Pre-Computation Filtering (Server)**: Regex/AST parser checks for banned keywords
   (`OS`, `FileAccess`, `DirAccess`, `GDExtension`).
 - **Layer 2: Browser Sandbox (Client)**: Godot Web export runs inside the browser's WASM container.
-- **Layer 3: Runtime Isolation (Godot)**: AI games are instantiated as child nodes. The
-  `Microgame` base class provides the interface and Director manages the lifecycle.
+- **Layer 3: Runtime Isolation (Godot)**: AI games are instantiated as child nodes. The `Microgame`
+  base class provides the interface and Director manages the lifecycle.
 
 ## 3. Frontend Architecture (Godot Client)
 

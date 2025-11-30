@@ -2,14 +2,14 @@
 
 ## Format Constraints
 
-| Property | Requirement |
-|----------|-------------|
-| **Folder Structure** | Each game in own folder: `games/[game_name]/` |
-| **Instruction** | One word, ALL CAPS (e.g., "DODGE!", "CATCH!", "PUSH!") |
-| **Resolution** | 640x640 pixels (square canvas) |
-| **Duration** | 5 seconds |
-| **Outcome** | Binary pass/fail (score > 0 = pass, score = 0 = fail) |
-| **Speed Multiplier** | 1.0x to 5.0x (progressive difficulty) |
+| Property             | Requirement                                            |
+| -------------------- | ------------------------------------------------------ |
+| **Folder Structure** | Each game in own folder: `games/[game_name]/`          |
+| **Instruction**      | One word, ALL CAPS (e.g., "DODGE!", "CATCH!", "PUSH!") |
+| **Resolution**       | 640x640 pixels (square canvas)                         |
+| **Duration**         | 5 seconds                                              |
+| **Outcome**          | Binary pass/fail (score > 0 = pass, score = 0 = fail)  |
+| **Speed Multiplier** | 1.0x to 5.0x (progressive difficulty)                  |
 
 ## File Structure
 
@@ -24,6 +24,7 @@ games/
 ## Core Rules
 
 ### Speed Multiplier
+
 - Games MUST scale difficulty with `speed_multiplier` property (1.0 to 5.0)
 - Apply to: velocities, spawn rates, timers
 - DO NOT scale: collision shapes, visual sizes, delta time
@@ -37,18 +38,44 @@ velocity * delta * speed_multiplier
 ```
 
 ### Win/Lose System
+
 - **Win**: Call `add_score(positive_value)` then `end_game()` - game ends immediately
 - **Lose**: Call `end_game()` with score still at 0 - game ends immediately
-- **After end_game()**: Stop all game logic, but let the full 5-second timer run out before Director transition
+- **After end_game()**: Stop all game logic, but let the full 5-second timer run out before Director
+  transition
 - **No replay**: Games should not restart or loop - once ended, wait for Director
 - Director interprets: score > 0 = PASS, score == 0 = FAIL
 - Must call `end_game()` within 5 seconds (track with timer)
 
 ### Instruction
+
 - Must be set in `_ready()`
 - Single action verb in ALL CAPS
 - Max 12 characters
 - Examples: "DODGE!", "CATCH!", "PUSH!", "TAP!", "AVOID!"
+
+### Input Controls
+- **Touch-first design**: Games are designed for mobile touch input
+- **PC controls**: Mouse position and click events map to touch
+- **Implementation**: Use `InputEventMouseButton` and `InputEventMouseMotion` for both platforms
+- **Single-touch games**: Most games should use single-point interaction
+- **Position-based**: Use `event.position` for tap/click location
+
+```gdscript
+func _input(event):
+    if game_ended:
+        return
+
+    # Click/Tap detection
+    if event is InputEventMouseButton and event.pressed:
+        var click_pos = event.position
+        _handle_tap(click_pos)
+
+    # Drag/Move detection (optional)
+    if event is InputEventMouseMotion:
+        var mouse_pos = event.position
+        _handle_drag(mouse_pos)
+```
 
 ## Example Template
 

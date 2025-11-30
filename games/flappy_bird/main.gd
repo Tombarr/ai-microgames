@@ -8,8 +8,12 @@ const BIRD_SIZE: float = 24.0
 const PIPE_WIDTH: float = 60.0
 const PIPE_GAP: float = 180.0
 const PIPE_SPEED: float = 200.0
-const PIPE_SPACING: float = 250.0
+const PIPE_SPACING: float = 400.0  # Increased spacing between pipes
 const TARGET_SCORE: int = 3  # Need to pass 3 pipes in 5 seconds
+
+# Sound effects
+const SFX_WIN = preload("res://shared/assets/sfx_win.wav")
+const SFX_LOSE = preload("res://shared/assets/sfx_lose.wav")
 
 # State
 var bird: Area2D
@@ -19,6 +23,8 @@ var time_elapsed: float = 0.0
 var viewport_size: Vector2
 var pipes_passed: int = 0
 var next_pipe_x: float = 0.0
+var game_ended: bool = false
+var grace_period: float = 0.3  # Give player time to react before gravity
 
 func _ready():
 	instruction = "TAP!"
@@ -28,7 +34,7 @@ func _ready():
 
 	# Create bird
 	bird = Area2D.new()
-	bird.position = Vector2(viewport_size.x * 0.25, viewport_size.y * 0.5)
+	bird.position = Vector2(viewport_size.x * 0.15, viewport_size.y * 0.4)  # Start slightly higher
 	add_child(bird)
 
 	# Bird visual (yellow circle)
@@ -42,9 +48,21 @@ func _ready():
 	bird_collision.shape = bird_shape
 	bird.add_child(bird_collision)
 
+	# Setup audio
+	var sfx_win = AudioStreamPlayer.new()
+	sfx_win.name = "sfx_win"
+	sfx_win.stream = SFX_WIN
+	add_child(sfx_win)
+
+	var sfx_lose = AudioStreamPlayer.new()
+	sfx_lose.name = "sfx_lose"
+	sfx_lose.stream = SFX_LOSE
+	add_child(sfx_lose)
+
 	# Spawn first pipe farther away to give player time to react
-	next_pipe_x = viewport_size.x * 0.7
-	_spawn_pipe()
+	# Use bird's starting Y position for the first pipe gap to ensure it's safe
+	next_pipe_x = viewport_size.x * 0.8  # Start at 80% from left (near right edge)
+	_spawn_pipe(bird.position.y)
 
 	print("Flappy Bird Started! Pass " + str(TARGET_SCORE) + " pipes!")
 
@@ -53,16 +71,28 @@ func _process(delta):
 
 	# Check timeout
 	if time_elapsed >= GAME_DURATION:
-		end_game()
+		if not game_ended:
+			# Only play lose sound if player didn't score
+			if current_score == 0:
+				$sfx_lose.play()
+			end_game()
+			game_ended = true
 		return
 
-	# Apply gravity with speed multiplier
-	bird_velocity += GRAVITY * speed_multiplier * delta
+	# Stop game logic after game ends
+	if game_ended:
+		return
+
+	# Apply gravity with speed multiplier (after grace period)
+	if time_elapsed > grace_period:
+		bird_velocity += GRAVITY * speed_multiplier * delta
 	bird.position.y += bird_velocity * delta
 
 	# Check if bird hit floor or ceiling
 	if bird.position.y < BIRD_SIZE or bird.position.y > viewport_size.y - BIRD_SIZE:
+		$sfx_lose.play()
 		end_game()  # Fail
+		game_ended = true
 		return
 
 	# Move pipes with speed multiplier
@@ -83,7 +113,9 @@ func _process(delta):
 			# Check win condition
 			if pipes_passed >= TARGET_SCORE:
 				add_score(100)  # Bonus for winning
+				$sfx_win.play()
 				end_game()
+				game_ended = true
 				return
 
 		# Check collision with pipe
@@ -91,7 +123,9 @@ func _process(delta):
 		var bottom_pipe = pipe.get_node("BottomPipe")
 
 		if bird.overlaps_area(top_pipe) or bird.overlaps_area(bottom_pipe):
+			$sfx_lose.play()
 			end_game()  # Fail
+			game_ended = true
 			return
 
 		# Remove off-screen pipes
@@ -104,12 +138,18 @@ func _process(delta):
 		_spawn_pipe()
 
 func _input(event):
+	# Ignore input after game ends
+	if game_ended:
+		return
+
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		bird_velocity = JUMP_VELOCITY
 	elif event is InputEventScreenTouch and event.pressed:
 		bird_velocity = JUMP_VELOCITY
+	elif event.is_action_pressed("jump") or event.is_action_pressed("ui_up") or event.is_action_pressed("move_up"):
+		bird_velocity = JUMP_VELOCITY
 
-func _spawn_pipe():
+func _spawn_pipe(safe_gap_y: float = -1.0):
 	var pipe = Node2D.new()
 
 	# Position for next pipe
@@ -123,7 +163,15 @@ func _spawn_pipe():
 	pipe.set_meta("passed", false)
 
 	# Random gap position (keep it reasonable for 5-second gameplay)
-	var gap_y = randf_range(PIPE_GAP, viewport_size.y - PIPE_GAP)
+	# Use safe_gap_y for first pipe to align with bird's starting position
+	var gap_y: float
+	if safe_gap_y > 0:
+		gap_y = safe_gap_y
+	else:
+		# Keep gaps in the middle 60% of screen to avoid spawning too high/low
+		var min_gap = viewport_size.y * 0.3
+		var max_gap = viewport_size.y * 0.7
+		gap_y = randf_range(min_gap, max_gap)
 
 	# Top pipe
 	var top_pipe = _create_pipe_segment(gap_y - PIPE_GAP / 2, true)
