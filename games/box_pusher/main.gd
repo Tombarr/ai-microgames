@@ -1,16 +1,16 @@
 extends "res://shared/scripts/microgame.gd"
 
 # Assets
-const TEX_PLAYER = preload("res://games/micro_sokoban/assets/player.png")
-const TEX_BOX = preload("res://games/micro_sokoban/assets/box.png")
-const TEX_TARGET = preload("res://games/micro_sokoban/assets/target.png")
-const TEX_WALL = preload("res://games/micro_sokoban/assets/wall.png")
-const TEX_FLOOR = preload("res://games/micro_sokoban/assets/floor.png")
+const TEX_PLAYER = preload("res://games/box_pusher/assets/player.png")
+const TEX_BOX = preload("res://games/box_pusher/assets/box.png")
+const TEX_TARGET = preload("res://games/box_pusher/assets/target.png")
+const TEX_WALL = preload("res://games/box_pusher/assets/wall.png")
+const TEX_FLOOR = preload("res://games/box_pusher/assets/floor.png")
 
-const SFX_MOVE = preload("res://games/micro_sokoban/assets/sfx_move.wav")
-const SFX_PUSH = preload("res://games/micro_sokoban/assets/sfx_push.wav")
-const SFX_WIN = preload("res://games/micro_sokoban/assets/sfx_win.wav")
-const SFX_LOSE = preload("res://games/micro_sokoban/assets/sfx_lose.wav")
+const SFX_MOVE = preload("res://games/box_pusher/assets/sfx_move.wav")
+const SFX_PUSH = preload("res://games/box_pusher/assets/sfx_push.wav")
+const SFX_WIN = preload("res://games/box_pusher/assets/sfx_win.wav")
+const SFX_LOSE = preload("res://games/box_pusher/assets/sfx_lose.wav")
 
 # Grid
 const TILE_SIZE = 64
@@ -114,19 +114,13 @@ var game_active = true
 @onready var sfx_push = $SFXPush
 @onready var sfx_win = $SFXWin
 @onready var sfx_lose = $SFXLose
-@onready var timer = $GameTimer
-
-@onready var progress_bar = $UI/ProgressBar
-@onready var game_over_overlay = $UI/GameOverOverlay
-@onready var title_label = $UI/GameOverOverlay/TitleLabel
 
 # Visuals
 var player_sprite: Sprite2D
 var box_sprite: Sprite2D
 
-var game_over_state = false
-
 func _ready():
+	instruction = "PUSH!"
 	super._ready()
 	
 	# Initialize Audio Streams
@@ -135,20 +129,8 @@ func _ready():
 	sfx_win.stream = SFX_WIN
 	sfx_lose.stream = SFX_LOSE
 	
-	# Setup Timer
-	timer.timeout.connect(_on_timer_timeout)
-	timer.start() # Autostart is off in scene, so start here. Default 10s.
-	
-	# UI Setup
-	progress_bar.max_value = timer.wait_time
-	game_over_overlay.visible = false
-	
 	_load_random_level()
 	_render_level()
-
-func _process(_delta):
-	if game_active:
-		progress_bar.value = timer.time_left
 
 func _load_random_level():
 	var rng = RandomNumberGenerator.new()
@@ -253,20 +235,18 @@ func _update_sprite_pos(sprite, grid_pos):
 	sprite.position = Vector2(grid_pos.x * TILE_SIZE + TILE_SIZE/2.0, grid_pos.y * TILE_SIZE + TILE_SIZE/2.0)
 
 func _unhandled_input(event):
-	if game_over_state and event.is_action_pressed("ui_accept"):
-		get_tree().reload_current_scene()
+	if not game_active:
 		return
-
-	if not game_active: return
 	
 	var dir = Vector2i.ZERO
-	if event.is_action_pressed("ui_up"):
+	# Arrow keys
+	if event.is_action_pressed("ui_up") or event.is_action_pressed("move_up"):
 		dir = Vector2i.UP
-	elif event.is_action_pressed("ui_down"):
+	elif event.is_action_pressed("ui_down") or event.is_action_pressed("move_down"):
 		dir = Vector2i.DOWN
-	elif event.is_action_pressed("ui_left"):
+	elif event.is_action_pressed("ui_left") or event.is_action_pressed("move_left"):
 		dir = Vector2i.LEFT
-	elif event.is_action_pressed("ui_right"):
+	elif event.is_action_pressed("ui_right") or event.is_action_pressed("move_right"):
 		dir = Vector2i.RIGHT
 		
 	if dir != Vector2i.ZERO:
@@ -319,35 +299,18 @@ func _is_wall(pos: Vector2i) -> bool:
 	return grid[pos.y][pos.x] == TileType.WALL
 
 func _win():
+	if not game_active:
+		return
 	game_active = false
-	timer.stop()
 	sfx_win.play()
 	add_score(1)
-	
-	# Show UI
-	title_label.text = "SUCCESS!"
-	title_label.modulate = Color.GREEN
-	game_over_overlay.visible = true
-	game_over_state = true
-	
-	# Note: We do NOT call end_game() automatically to allow replay.
-	# But in a real microgame flow, we would.
-	print("Game Won. Press Enter to Replay.")
-
-func _on_timer_timeout():
-	if not game_active: return
-	_fail()
+	end_game()
+	print("Game Won!")
 
 func _fail():
-	if not game_active: return
+	if not game_active:
+		return
 	game_active = false
-	timer.stop()
 	sfx_lose.play()
-	
-	# Show UI
-	title_label.text = "FAILURE"
-	title_label.modulate = Color.RED
-	game_over_overlay.visible = true
-	game_over_state = true
-	
-	print("Game Lost. Press Enter to Replay.")
+	end_game()
+	print("Game Lost!")

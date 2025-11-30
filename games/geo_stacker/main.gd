@@ -1,12 +1,11 @@
-extends MicrogameAI
+extends Microgame
 
-# Grid configuration - sized to fill 640x640 viewport with progress bar at bottom
+# Grid configuration - sized to fill 640x640 viewport
 const GRID_WIDTH = 14
 const GRID_HEIGHT = 13
 const TILE_SIZE = 45
 const BORDER_SIZE = 4  # Thick black border between squares
 const GRID_OFFSET = Vector2(5, 5)  # Small margin from edges
-const PROGRESS_BAR_HEIGHT = 20
 
 # High contrast color palette (5 colors)
 const COLORS = [
@@ -60,8 +59,6 @@ const FLOOR_CONFIGS = [
 	]
 ]
 
-const GAME_DURATION = 10.0  # 10 second timer
-
 var grid = []  # 2D array to track placed tiles
 var current_piece = null  # Dictionary with shape data
 var current_piece_tiles = []  # Array of ColorRect nodes for current piece
@@ -69,16 +66,15 @@ var placed_tiles = []  # 2D array of ColorRect nodes for placed tiles
 var lines_cleared = 0
 var game_active = true
 var drop_timer = 0.0
-var drop_interval = 0.5  # Faster drops for 10 second game
-var time_remaining = GAME_DURATION
-var progress_bar_fill = null
-var result_label = null
+var drop_interval = 0.5  # Faster drops for microgame
 
 func _ready():
+	super._ready()
+	instruction = "STACK!"
+	
 	_initialize_sounds()
 	_initialize_grid()
 	_draw_grid_background()
-	_create_progress_bar()
 	_place_starting_pieces()
 	_spawn_new_piece()
 
@@ -102,21 +98,6 @@ func _draw_grid_background():
 	bg.position = GRID_OFFSET
 	bg.size = Vector2(GRID_WIDTH * TILE_SIZE, GRID_HEIGHT * TILE_SIZE)
 	add_child(bg)
-
-func _create_progress_bar():
-	# Progress bar background (gray)
-	var bar_bg = ColorRect.new()
-	bar_bg.color = Color(0.2, 0.2, 0.2)
-	bar_bg.position = Vector2(5, 640 - PROGRESS_BAR_HEIGHT - 5)
-	bar_bg.size = Vector2(630, PROGRESS_BAR_HEIGHT)
-	add_child(bar_bg)
-	
-	# Progress bar fill (green to red gradient effect via color change)
-	progress_bar_fill = ColorRect.new()
-	progress_bar_fill.color = Color(0.2, 0.8, 0.2)  # Start green
-	progress_bar_fill.position = Vector2(5, 640 - PROGRESS_BAR_HEIGHT - 5)
-	progress_bar_fill.size = Vector2(630, PROGRESS_BAR_HEIGHT)
-	add_child(progress_bar_fill)
 
 func _place_starting_pieces():
 	# Pick a random floor configuration
@@ -159,6 +140,7 @@ func _spawn_new_piece():
 	var color = COLORS[randi() % COLORS.size()]
 	
 	# Starting position (top center)
+	@warning_ignore("integer_division")
 	var start_x = GRID_WIDTH / 2 - 1
 	var start_y = 0
 	
@@ -238,25 +220,6 @@ func _process(delta):
 	if not game_active:
 		return
 	
-	# Update timer and progress bar
-	time_remaining -= delta
-	var progress = max(0, time_remaining / GAME_DURATION)
-	
-	if progress_bar_fill:
-		progress_bar_fill.size.x = 630 * progress
-		# Color transitions from green to yellow to red
-		if progress > 0.5:
-			progress_bar_fill.color = Color(0.2, 0.8, 0.2)  # Green
-		elif progress > 0.25:
-			progress_bar_fill.color = Color(0.9, 0.7, 0.1)  # Yellow
-		else:
-			progress_bar_fill.color = Color(0.9, 0.2, 0.2)  # Red
-	
-	# Check for time out (lose condition)
-	if time_remaining <= 0:
-		_end_game(false)
-		return
-	
 	if current_piece == null:
 		return
 	
@@ -266,50 +229,28 @@ func _process(delta):
 		drop_timer = 0.0
 		_move_piece(Vector2(0, 1))
 	
-	# Input handling
-	if Input.is_action_just_pressed("ui_left"):
+	# Input handling (Arrow keys and WASD via custom actions)
+	if Input.is_action_just_pressed("ui_left") or Input.is_action_just_pressed("move_left"):
 		_move_piece(Vector2(-1, 0))
-	if Input.is_action_just_pressed("ui_right"):
+	if Input.is_action_just_pressed("ui_right") or Input.is_action_just_pressed("move_right"):
 		_move_piece(Vector2(1, 0))
-	if Input.is_action_just_pressed("ui_down"):
+	if Input.is_action_just_pressed("ui_down") or Input.is_action_just_pressed("move_down"):
 		_move_piece(Vector2(0, 1))
-	if Input.is_action_just_pressed("ui_up"):
+	if Input.is_action_just_pressed("ui_up") or Input.is_action_just_pressed("move_up"):
 		_rotate_piece()
 
 func _end_game(did_win: bool):
+	if not game_active:
+		return
 	game_active = false
 	
-	# Add a dark background behind text for readability (centered in 640x640 viewport)
-	var label_bg = ColorRect.new()
-	label_bg.color = Color(0, 0, 0, 0.7)
-	label_bg.size = Vector2(300, 120)
-	label_bg.position = Vector2((640 - label_bg.size.x) / 2, (640 - label_bg.size.y) / 2)
-	add_child(label_bg)
-	
-	# Show result label (centered in viewport)
-	result_label = Label.new()
-	result_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	result_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	result_label.add_theme_font_size_override("font_size", 72)
-	result_label.size = Vector2(300, 120)
-	result_label.position = Vector2((640 - result_label.size.x) / 2, (640 - result_label.size.y) / 2)
-	
 	if did_win:
-		result_label.text = "WIN!"
-		result_label.add_theme_color_override("font_color", Color(0.2, 0.9, 0.2))
 		$sfx_win.play()
+		add_score(1)
 	else:
-		result_label.text = "LOSE"
-		result_label.add_theme_color_override("font_color", Color(0.9, 0.2, 0.2))
 		$sfx_lose.play()
 	
-	add_child(result_label)
-	
-	# Call win/lose after a short delay to show the message
-	if did_win:
-		get_tree().create_timer(1.0).connect("timeout", win)
-	else:
-		get_tree().create_timer(1.0).connect("timeout", lose)
+	end_game()
 
 func _move_piece(direction: Vector2):
 	if current_piece == null:

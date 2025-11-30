@@ -26,7 +26,7 @@ Pass/Fail report, automatic fix patches.
 ## Responsibilities
 
 - **Static Analysis:**
-  - Check if the script extends `MicrogameAI`.
+  - Check if the script extends `Microgame`.
   - Scan GDScript for banned keywords (`OS`, `FileAccess`, `ProjectSettings`, `DirAccess`,
     `GDExtension`).
 - **Automated Fuzz Testing ("Monkey Tester"):**
