@@ -110,13 +110,15 @@ func _setup_ui() -> void:
 	progress_bar_bg.position = Vector2(bar_margin, viewport_size.y - bar_height - bar_margin)
 	progress_bar_bg.size = Vector2(viewport_size.x - 2 * bar_margin, bar_height)
 	progress_bar_bg.visible = false
+	progress_bar_bg.z_index = 100  # Ensure timer is on top of game content
 	add_child(progress_bar_bg)
-	
+
 	progress_bar = ColorRect.new()
 	progress_bar.color = Color(0.2, 0.8, 0.2)  # Start green
 	progress_bar.position = Vector2(bar_margin, viewport_size.y - bar_height - bar_margin)
 	progress_bar.size = Vector2(viewport_size.x - 2 * bar_margin, bar_height)
 	progress_bar.visible = false
+	progress_bar.z_index = 100  # Ensure timer is on top of game content
 	add_child(progress_bar)
 	
 	# Create game title label (centered, for intro animation)
@@ -127,8 +129,9 @@ func _setup_ui() -> void:
 	game_title_label.size = viewport_size
 	game_title_label.modulate = Color(1, 1, 1, 0)  # Start transparent
 	game_title_label.visible = false
+	game_title_label.z_index = 100  # Ensure on top of game content
 	add_child(game_title_label)
-	
+
 	# Create status label (Win/Lose, centered)
 	status_label = Label.new()
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -137,6 +140,7 @@ func _setup_ui() -> void:
 	status_label.size = viewport_size
 	status_label.modulate = Color(1, 1, 1, 0)  # Start transparent
 	status_label.visible = false
+	status_label.z_index = 100  # Ensure on top of game content
 	add_child(status_label)
 
 func _reset_game_state() -> void:

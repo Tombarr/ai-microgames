@@ -50,6 +50,29 @@ velocity * delta * speed_multiplier
 - Max 12 characters
 - Examples: "DODGE!", "CATCH!", "PUSH!", "TAP!", "AVOID!"
 
+### Input Controls
+- **Touch-first design**: Games are designed for mobile touch input
+- **PC controls**: Mouse position and click events map to touch
+- **Implementation**: Use `InputEventMouseButton` and `InputEventMouseMotion` for both platforms
+- **Single-touch games**: Most games should use single-point interaction
+- **Position-based**: Use `event.position` for tap/click location
+
+```gdscript
+func _input(event):
+    if game_ended:
+        return
+
+    # Click/Tap detection
+    if event is InputEventMouseButton and event.pressed:
+        var click_pos = event.position
+        _handle_tap(click_pos)
+
+    # Drag/Move detection (optional)
+    if event is InputEventMouseMotion:
+        var mouse_pos = event.position
+        _handle_drag(mouse_pos)
+```
+
 ## Example Template
 
 ```gdscript

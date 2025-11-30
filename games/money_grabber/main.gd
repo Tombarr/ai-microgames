@@ -6,6 +6,10 @@ const HAND_Y_OFFSET: float = 100.0 # From bottom
 const SPAWN_MARGIN: float = 50.0
 const HAND_SPEED: float = 400.0  # Keyboard movement speed
 
+# Sound effects
+const SFX_WIN = preload("res://shared/assets/sfx_win.wav")
+const SFX_LOSE = preload("res://shared/assets/sfx_lose.wav")
+
 # Ruby Types configuration
 const RUBY_TYPES = [
 	{ "name": "green", "value": 1, "color": Color.GREEN, "weight": 60, "base_speed": 400.0 },
@@ -29,6 +33,17 @@ func _ready():
 
 	# Create Hand
 	hand = _create_area(Vector2(viewport_size.x / 2, viewport_size.y - HAND_Y_OFFSET), 30.0, Color("ffccaa"), Vector2(60, 60))
+
+	# Setup audio
+	var sfx_win = AudioStreamPlayer.new()
+	sfx_win.name = "sfx_win"
+	sfx_win.stream = SFX_WIN
+	add_child(sfx_win)
+
+	var sfx_lose = AudioStreamPlayer.new()
+	sfx_lose.name = "sfx_lose"
+	sfx_lose.stream = SFX_LOSE
+	add_child(sfx_lose)
 
 	# Adjust difficulty based on speed_multiplier
 	current_spawn_interval = 0.4 / speed_multiplier
@@ -118,6 +133,7 @@ func _collect_ruby(ruby: Area2D) -> void:
 	# Check win condition
 	if current_score >= TARGET_SCORE:
 		game_active = false
+		$sfx_win.play()
 		end_game()
 
 func _create_area(pos: Vector2, radius: float, color: Color, size: Vector2) -> Area2D:
