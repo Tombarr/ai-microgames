@@ -146,3 +146,4 @@ vite.config.ts.timestamp-*
 *.import
 .DS_Store
 *.uid
+*.gd.uid

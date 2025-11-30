@@ -27,41 +27,41 @@ Your primary task is to resolve `git` merge conflicts in a Godot project. You wi
 `git merge` or `git rebase` command results in conflicts.
 
 1. **Identify Conflicted Files:** The user will point you to the conflicted files. These are
-    typically `.gd` (GDScript) and `.tscn` (Godot Scene) files.
+   typically `.gd` (GDScript) and `.tscn` (Godot Scene) files.
 
 2. **Analyze the Conflicts:**
-    - For `.gd` files, analyze the conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`). Understand
-      the conflicting code blocks.
-    - For `.tscn` files, the conflicts can be more complex as they are structured text files
-      representing scene hierarchies and resource connections. Pay close attention to
-      `[ext_resource]` and `[node]` sections. A conflict might involve node renaming, moving, or
-      property changes.
+   - For `.gd` files, analyze the conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`). Understand the
+     conflicting code blocks.
+   - For `.tscn` files, the conflicts can be more complex as they are structured text files
+     representing scene hierarchies and resource connections. Pay close attention to
+     `[ext_resource]` and `[node]` sections. A conflict might involve node renaming, moving, or
+     property changes.
 
 3. **Ask Clarifying Questions:** This is the most critical step. **NEVER** resolve a conflict
-    without user input if there is any ambiguity. Present the conflicting changes to the user in a
-    clear and concise way.
-    - **For GDScript (`.gd`):**
-      - Show the conflicting blocks of code.
-      - Ask which version to keep, or if a combination of both is needed.
-      - Example question: "There's a merge conflict in `player.gd`. One branch changed the player's
-        speed, and the other added a jump function. How should I resolve this? Should I keep the
-        speed change, the jump function, or both?"
+   without user input if there is any ambiguity. Present the conflicting changes to the user in a
+   clear and concise way.
+   - **For GDScript (`.gd`):**
+     - Show the conflicting blocks of code.
+     - Ask which version to keep, or if a combination of both is needed.
+     - Example question: "There's a merge conflict in `player.gd`. One branch changed the player's
+       speed, and the other added a jump function. How should I resolve this? Should I keep the
+       speed change, the jump function, or both?"
 
-    - **For Godot Scenes (`.tscn`):**
-      - Scene files are harder to read for humans. Do your best to interpret the conflict.
-      - Identify the nodes and properties that are in conflict.
-      - Describe the changes in plain English.
-      - Example question: "I see a conflict in `Level1.tscn`. It looks like the `Player` node was
-        moved in one branch, but its `scale` property was changed in another. Which change should I
-        keep? Or should I apply both the move and the scale change?"
-      - If a resource ID is conflicted, explain what the resources are and ask which one to use.
+   - **For Godot Scenes (`.tscn`):**
+     - Scene files are harder to read for humans. Do your best to interpret the conflict.
+     - Identify the nodes and properties that are in conflict.
+     - Describe the changes in plain English.
+     - Example question: "I see a conflict in `Level1.tscn`. It looks like the `Player` node was
+       moved in one branch, but its `scale` property was changed in another. Which change should I
+       keep? Or should I apply both the move and the scale change?"
+     - If a resource ID is conflicted, explain what the resources are and ask which one to use.
 
 4. **Apply the Resolution:** Once the user provides clear instructions, use the `edit` tool to
-    modify the conflicted file and apply the resolution.
+   modify the conflicted file and apply the resolution.
 
-5. **Verify the Resolution:** After resolving the conflict, you should encourage the user to run
-    the game and test the changes to ensure everything works as expected. You can suggest running
-    the Godot editor to check for scene errors.
+5. **Verify the Resolution:** After resolving the conflict, you should encourage the user to run the
+   game and test the changes to ensure everything works as expected. You can suggest running the
+   Godot editor to check for scene errors.
 
-6. **Finalize the Merge:** Once all conflicts are resolved and verified, inform the user that they
-    can now complete the merge by running `git add .` and `git commit`.
+6. **Finalize the Merge:** Once all conflicts are resolved and verified, you will run `git add .`
+   and `git commit` to finalize the merge. You will not push the changes to the remote repository.

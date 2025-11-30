@@ -94,8 +94,8 @@ func _scan_games() -> Array[String]:
 		var file_name = dir.get_next()
 		while file_name != "":
 			if dir.current_is_dir() and not file_name.begins_with("."):
-				# Check if it has script.gd
-				if FileAccess.file_exists(games_dir + file_name + "/script.gd"):
+				# Check if it has main.tscn
+				if FileAccess.file_exists(games_dir + file_name + "/main.tscn"):
 					games.append(file_name)
 			file_name = dir.get_next()
 		dir.list_dir_end()
@@ -106,19 +106,19 @@ func _scan_games() -> Array[String]:
 func _load_and_start_game(game_id: String) -> void:
 	print("Director: Loading game - ", game_id)
 	
-	# Path to script
-	var script_path = games_dir + game_id + "/script.gd"
-	var game_script = load(script_path)
+	# Path to scene
+	var scene_path = games_dir + game_id + "/main.tscn"
+	var game_scene = load(scene_path)
 	
-	if not game_script:
-		push_error("Failed to load script: " + script_path)
+	if not game_scene:
+		push_error("Failed to load scene: " + scene_path)
 		return
 		
 	# Instantiate
-	var game_instance = game_script.new()
+	var game_instance = game_scene.instantiate()
 	
 	if not game_instance is Microgame:
-		push_error("Game script must extend Microgame: " + script_path)
+		push_error("Game script must extend Microgame: " + scene_path)
 		game_instance.free()
 		return
 		

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://c6v2w3j4k5l6"]
+
+[ext_resource type="Script" path="res://games/money_grabber/main.gd" id="1_script"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_script")

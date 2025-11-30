@@ -25,8 +25,14 @@ Pass/Fail report, automatic fix patches.
 
 ## Responsibilities
 
-- **Static Analysis:** Check if `main.tscn` exists and if the script extends `Microgame`.
-- **Runtime Test:** Run the scene in headless mode (if possible) or parse the `.tscn` file to ensure
-  no missing resources.
-- **Constraint Check:** Verify that a timer or game-over condition exists within the script to
-  prevent infinite loops.
+- **Static Analysis:**
+  - Check if the script extends `MicrogameAI`.
+  - Scan GDScript for banned keywords (`OS`, `FileAccess`, `ProjectSettings`, `DirAccess`,
+    `GDExtension`).
+- **Automated Fuzz Testing ("Monkey Tester"):**
+  - Before serving to users, run the game and provide random inputs to test for crashes or unhandled
+    exceptions.
+- **Constraint Check:**
+  - Verify that a `game_ended` signal is emitted within the 5-second limit.
+- **User Feedback Loop:**
+  - Implement a system for users to vote on whether a game is "Fun" or "Broken" to prune bad seeds.

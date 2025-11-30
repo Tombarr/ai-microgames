@@ -24,8 +24,11 @@ Image files (`.png`, `.svg`) and Audio files (`.wav`, `.ogg`) placed in the `ass
 
 ## Responsibilities
 
+- **Visual Style:** Adhere to the "Digital Marker Chaos" / Pop Art style.
+- **Prompt Strategy:** Use the following prompt strategy for generating visuals: "vector art style,
+  thick distinct black outlines, flat vibrant colors, no gradients, white background, sticker art".
 - **Sprite Generation:** Create sprites using available tools or SVG procedural generation.
 - **UI Elements:** Generate simple UI assets (buttons, icons).
-- **Format Compliance:** Ensure assets are import-friendly for Godot (powers of 2 dimensions where
-  possible, transparent backgrounds).
+- **Format Compliance:** Ensure assets are import-friendly for Godot (PNG/WebP for sprites, SVG for
+  vector).
 - **Placeholder Management:** If generation fails, provide distinct, color-coded placeholders.

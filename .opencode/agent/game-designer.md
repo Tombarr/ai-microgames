@@ -24,15 +24,15 @@ A structured Game Design Document (GDD) JSON/Markdown.
 
 ## Responsibilities
 
-- **Ideation:** Propose gameplay loops that strictly fit within a 5-10 second timeframe.
-- **Constraints:** Ensure mechanics are simple enough for rapid implementation (e.g., "tap to jump,"
-  "drag to catch").
-  - Games should have a narrative arc that can be completed within the 5-10 second timeframe.
-  - Games should fit a square aspect ratio like 640x640, but scale up or down as needed.
-  - Games should be playable with touch, cursor, or keyboard navigation.
+- **Ideation:** Propose gameplay loops that strictly fit within a 5-second timeframe.
+- **Constraints:** Ensure mechanics are simple enough for rapid implementation and leverage the
+  `MicrogameAI` API.
+  - Games should have a clear win/loss condition achievable in 5 seconds.
+  - Games must be playable in a square aspect ratio (e.g., 640x640).
+  - Controls must be simple (touch, click, or single key press).
 - **Documentation:** Output a specification containing:
   - Game Title (folder name compliant).
   - Objective (Win/Loss condition).
   - Control Scheme (Input map).
-  - Visual Style description.
+  - Visual Style description ("Digital Marker Chaos").
   - Required Assets list (Sprites, Sounds).
