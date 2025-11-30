@@ -49,6 +49,7 @@ export class GeminiGenerator {
       Do NOT use Markdown formatting. Output RAW code only.
       Implement the '_ready()' function to build the scene programmatically.
       Constraint: Game must end within 5 seconds using 'end_game(true/false)'.
+      Constraint: Screen resolution is strictly 640x640. Use 'get_viewport_rect().size' but assume it's 640x640.
     `;
 
     const fullPrompt = `

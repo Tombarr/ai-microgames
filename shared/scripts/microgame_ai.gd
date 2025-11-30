@@ -9,6 +9,10 @@ class_name MicrogameAI
 var game_duration: float = 5.0
 var background_color: Color = Color("1a1a2e") # Dark Blue default
 
+# Resolution assumes 640x640 (Project Setting)
+# AI should use get_viewport_rect().size but assume 640x640 for logic scaling.
+
+
 # Internal State
 var _time_elapsed: float = 0.0
 var _game_active: bool = false
