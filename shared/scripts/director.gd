@@ -392,32 +392,32 @@ func _format_game_name(game_id: String) -> String:
 	return " ".join(formatted_words)
 
 func _start_game_intro(title: String) -> void:
-	# Show game title
-	game_title_label.text = title
-	game_title_label.visible = true
+	# NO TITLE SCREEN: Show game immediately with title overlay
+	# Game is already at full opacity from creation
+	current_game.modulate.a = 1.0
 
-	# Fade in title over 0.15 seconds
-	var tween = create_tween()
-	tween.tween_property(game_title_label, "modulate:a", 1.0, 0.15)
-
-	# Wait 0.4 seconds total (0.15 fade in + 0.25 display)
-	await get_tree().create_timer(0.4).timeout
-
-	# Fade out title and fade in game simultaneously
-	var fade_tween = create_tween()
-	fade_tween.set_parallel(true)
-	fade_tween.tween_property(game_title_label, "modulate:a", 0.0, 0.15)
-	fade_tween.tween_property(current_game, "modulate:a", 1.0, 0.15)
-
-	await fade_tween.finished
-
-	game_title_label.visible = false
-
-	# Show progress bar and start game timer
+	# Show progress bar and start game timer immediately
 	progress_bar.visible = true
 	progress_bar_bg.visible = true
 	game_active = true
 	game_timer = 0.0
+
+	# Show game title as brief overlay on top of game
+	game_title_label.text = title
+	game_title_label.visible = true
+
+	# Fade in title quickly
+	var fade_in = create_tween()
+	fade_in.tween_property(game_title_label, "modulate:a", 1.0, 0.2)
+
+	# Wait 1 second showing title, then fade out
+	await get_tree().create_timer(1.0).timeout
+
+	var fade_out = create_tween()
+	fade_out.tween_property(game_title_label, "modulate:a", 0.0, 0.3)
+
+	await fade_out.finished
+	game_title_label.visible = false
 
 func _on_game_timeout() -> void:
 	if not game_active:
