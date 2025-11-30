@@ -37,8 +37,10 @@ velocity * delta * speed_multiplier
 ```
 
 ### Win/Lose System
-- **Pass**: Call `add_score(positive_value)` then `end_game()`
-- **Fail**: Call `end_game()` with score still at 0
+- **Win**: Call `add_score(positive_value)` then `end_game()` - game ends immediately
+- **Lose**: Call `end_game()` with score still at 0 - game ends immediately
+- **After end_game()**: Stop all game logic, but let the full 5-second timer run out before Director transition
+- **No replay**: Games should not restart or loop - once ended, wait for Director
 - Director interprets: score > 0 = PASS, score == 0 = FAIL
 - Must call `end_game()` within 5 seconds (track with timer)
 
@@ -54,6 +56,7 @@ velocity * delta * speed_multiplier
 extends Microgame
 
 var time_elapsed: float = 0.0
+var game_ended: bool = false
 const GAME_DURATION: float = 5.0
 
 func _ready():
@@ -66,9 +69,15 @@ func _ready():
 func _process(delta):
     time_elapsed += delta
 
-    # Check timeout
+    # Check timeout - always let full 5 seconds run for Director
     if time_elapsed >= GAME_DURATION:
-        end_game()  # Timeout = fail (score still 0)
+        if not game_ended:
+            end_game()  # Timeout = fail (score still 0)
+            game_ended = true
+        return
+
+    # Stop game logic after win/lose, but keep running until timeout
+    if game_ended:
         return
 
     # Apply speed_multiplier to all movement
@@ -77,9 +86,14 @@ func _process(delta):
     # Check win condition
     if objective_complete:
         add_score(100)  # Any positive value
-        end_game()
+        end_game()      # Game ends immediately
+        game_ended = true  # Stop further game logic
 
 func _input(event):
+    # Ignore input after game ends
+    if game_ended:
+        return
+
     # Handle player input
     if event is InputEventMouseButton and event.pressed:
         _check_click(event.position)

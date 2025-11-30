@@ -63,6 +63,7 @@ Never apply to: collision shapes, sizes, delta itself
 extends Microgame
 
 var time_elapsed: float = 0.0
+var game_ended: bool = false
 const GAME_DURATION: float = 5.0
 
 func _ready():
@@ -75,9 +76,15 @@ func _ready():
 func _process(delta):
     time_elapsed += delta
 
-    # Check timeout
+    # Always let full 5 seconds run for Director timing
     if time_elapsed >= GAME_DURATION:
-        end_game()  # Score already set, emit game_over signal
+        if not game_ended:
+            end_game()  # Timeout = fail
+            game_ended = true
+        return
+
+    # Stop game logic after win/lose
+    if game_ended:
         return
 
     # Apply speed_multiplier to movement
@@ -86,14 +93,16 @@ func _process(delta):
     # Check win condition
     if objective_complete:
         add_score(100)  # Or any positive value
-        end_game()  # Emits game_over(current_score)
+        end_game()  # Game ends immediately
+        game_ended = true  # Stop further logic
 ```
 
 ### Win/Lose Logic
-- **Pass**: Call `add_score(positive_value)` then `end_game()`
-- **Fail**: Call `end_game()` with score still at 0
+- **Win**: Call `add_score(positive_value)` then `end_game()` - game logic stops immediately
+- **Lose**: Call `end_game()` with score still at 0 - game logic stops immediately
+- **After end_game()**: Set `game_ended = true` to stop processing, but let full 5-second timer run
+- **No replay**: Games must not restart or loop - wait for Director transition
 - Director checks: `score > 0` = PASS, `score == 0` = FAIL
-- Always call `end_game()` before timeout or at timeout
 
 ### Common Mistakes
 1. Not setting `instruction` in `_ready()`
@@ -102,6 +111,8 @@ func _process(delta):
 4. Not calling `end_game()` when objective complete
 5. Scaling collision shapes with speed_multiplier
 6. Not checking for timeout
+7. **Allowing game logic to continue after `end_game()` is called**
+8. **Adding replay/restart logic instead of letting Director handle transitions**
 
 ## Game Requirements
 
