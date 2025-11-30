@@ -371,10 +371,10 @@ func _initialize_sounds():
 	
 	var sfx_win = AudioStreamPlayer.new()
 	sfx_win.name = "sfx_win"
-	sfx_win.stream = load("res://games/geo_stacker/assets/sfx_win.wav")
+	sfx_win.stream = load("res://shared/assets/sfx_win.wav")
 	add_child(sfx_win)
-	
+
 	var sfx_lose = AudioStreamPlayer.new()
 	sfx_lose.name = "sfx_lose"
-	sfx_lose.stream = load("res://games/geo_stacker/assets/sfx_lose.wav")
+	sfx_lose.stream = load("res://shared/assets/sfx_lose.wav")
 	add_child(sfx_lose)

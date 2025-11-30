@@ -9,8 +9,8 @@ const TEX_FLOOR = preload("res://games/box_pusher/assets/floor.png")
 
 const SFX_MOVE = preload("res://games/box_pusher/assets/sfx_move.wav")
 const SFX_PUSH = preload("res://games/box_pusher/assets/sfx_push.wav")
-const SFX_WIN = preload("res://games/box_pusher/assets/sfx_win.wav")
-const SFX_LOSE = preload("res://games/box_pusher/assets/sfx_lose.wav")
+const SFX_WIN = preload("res://shared/assets/sfx_win.wav")
+const SFX_LOSE = preload("res://shared/assets/sfx_lose.wav")
 
 # Grid
 const TILE_SIZE = 64
