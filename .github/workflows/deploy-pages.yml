@@ -62,9 +62,11 @@ jobs:
           for f in builds/web/*.js; do
             [ -f "$f" ] && terser "$f" -o "$f" --compress --mangle
           done
-          # Minify WASM binaries
+          # Minify WASM binaries (enable all features, skip on failure)
           for f in builds/web/*.wasm; do
-            [ -f "$f" ] && wasm-opt -Oz "$f" -o "$f"
+            if [ -f "$f" ]; then
+              wasm-opt -Oz --all-features "$f" -o "$f.opt" && mv "$f.opt" "$f" || echo "Skipping WASM optimization for $f"
+            fi
           done
 
       - name: Upload artifact
