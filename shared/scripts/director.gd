@@ -5,6 +5,15 @@ extends Node
 
 @export var games_dir: String = "res://games/"
 @export var initial_speed: float = 1.0
+
+# Static list of games for web export compatibility (DirAccess doesn't work in browser)
+const GAME_LIST: Array[String] = [
+	"box_pusher",
+	"flappy_bird",
+	"geo_stacker",
+	"money_grabber",
+	"sample_ai_game",
+]
 @export var speed_increment: float = 0.2
 @export var max_speed: float = 5.0
 @export var max_lives: int = 3
@@ -163,20 +172,13 @@ func _play_random_game() -> void:
 	_load_and_start_game(game_id)
 
 func _scan_games() -> Array[String]:
+	# Use static list for web compatibility (DirAccess doesn't work in browser)
+	# Filter to only include games that exist
 	var games: Array[String] = []
-	var dir = DirAccess.open(games_dir)
-	if dir:
-		dir.list_dir_begin()
-		var file_name = dir.get_next()
-		while file_name != "":
-			if dir.current_is_dir() and not file_name.begins_with("."):
-				# Check if it has main.tscn
-				if FileAccess.file_exists(games_dir + file_name + "/main.tscn"):
-					games.append(file_name)
-			file_name = dir.get_next()
-		dir.list_dir_end()
-	else:
-		push_error("Failed to open directory: " + games_dir)
+	for game_id in GAME_LIST:
+		var scene_path = games_dir + game_id + "/main.tscn"
+		if ResourceLoader.exists(scene_path):
+			games.append(game_id)
 	return games
 
 func _load_and_start_game(game_id: String) -> void:
