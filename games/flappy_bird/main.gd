@@ -42,8 +42,8 @@ func _ready():
 	bird_collision.shape = bird_shape
 	bird.add_child(bird_collision)
 
-	# Spawn first pipe close to the bird so game can start immediately
-	next_pipe_x = viewport_size.x * 0.5
+	# Spawn first pipe farther away to give player time to react
+	next_pipe_x = viewport_size.x * 0.7
 	_spawn_pipe()
 
 	print("Flappy Bird Started! Pass " + str(TARGET_SCORE) + " pipes!")
