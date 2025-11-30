@@ -8,7 +8,7 @@
 | **Instruction** | One word, ALL CAPS (e.g., "DODGE!", "CATCH!", "PUSH!") |
 | **Resolution** | 640x640 pixels (square canvas) |
 | **Duration** | 5 seconds |
-| **Outcome** | Binary pass/fail only |
+| **Outcome** | Binary pass/fail (score > 0 = pass, score = 0 = fail) |
 | **Speed Multiplier** | 1.0x to 5.0x (progressive difficulty) |
 
 ## File Structure
@@ -17,7 +17,7 @@
 games/
 └── [game_name]/
     ├── main.gd          # Game logic (extends Microgame)
-    ├── main.tscn        # Scene file
+    ├── main.tscn        # Scene file (root node with main.gd attached)
     └── assets/          # Game-specific assets (optional)
 ```
 
@@ -37,9 +37,10 @@ velocity * delta * speed_multiplier
 ```
 
 ### Win/Lose System
-- Call `win()` when objective complete
-- Call `lose()` when player fails
-- If timeout (5s) with no call: defaults to LOSE
+- **Pass**: Call `add_score(positive_value)` then `end_game()`
+- **Fail**: Call `end_game()` with score still at 0
+- Director interprets: score > 0 = PASS, score == 0 = FAIL
+- Must call `end_game()` within 5 seconds (track with timer)
 
 ### Instruction
 - Must be set in `_ready()`
@@ -52,34 +53,48 @@ velocity * delta * speed_multiplier
 ```gdscript
 extends Microgame
 
+var time_elapsed: float = 0.0
+const GAME_DURATION: float = 5.0
+
 func _ready():
     instruction = "TAP!"
     super._ready()
 
-    # Setup game
+    # Setup game objects
     _spawn_target()
 
 func _process(delta):
-    # Apply speed_multiplier to all movement
-    enemy_speed = BASE_SPEED * speed_multiplier * delta
+    time_elapsed += delta
 
-    # Check win/lose conditions
+    # Check timeout
+    if time_elapsed >= GAME_DURATION:
+        end_game()  # Timeout = fail (score still 0)
+        return
+
+    # Apply speed_multiplier to all movement
+    enemy.position += BASE_SPEED * speed_multiplier * delta
+
+    # Check win condition
     if objective_complete:
-        win()
-    elif failed:
-        lose()
+        add_score(100)  # Any positive value
+        end_game()
 
 func _input(event):
     # Handle player input
-    pass
+    if event is InputEventMouseButton and event.pressed:
+        _check_click(event.position)
 ```
 
 ## Checklist
 
 - [ ] Game folder: `games/[game_name]/`
-- [ ] One-word instruction set
+- [ ] `main.gd` extends `Microgame`
+- [ ] `main.tscn` with root node and script attached
+- [ ] One-word `instruction` set in `_ready()`
+- [ ] Call `super._ready()`
 - [ ] 640x640 resolution compatible
-- [ ] 5-second duration
+- [ ] 5-second timer with timeout check
 - [ ] `speed_multiplier` applied to all speeds
-- [ ] `win()` or `lose()` called explicitly
-- [ ] Pass/fail outcome only
+- [ ] `add_score()` for positive outcome
+- [ ] `end_game()` called explicitly
+- [ ] Pass/fail outcome only (score > 0 or score = 0)
