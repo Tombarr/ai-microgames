@@ -32,6 +32,12 @@ jobs:
         with:
           lfs: true
 
+      - name: Cache npm packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-minify-${{ runner.os }}
+
       - name: Install dependencies
         run: |
           apt-get update && apt-get install -y npm binaryen libfontconfig1
@@ -49,18 +55,17 @@ jobs:
 
       - name: Minify assets
         run: |
-          # Minify HTML
-          for f in builds/web/*.html; do
+          # Run HTML, CSS, JS minification in parallel
+          (for f in builds/web/*.html; do
             html-minifier-terser --collapse-whitespace --remove-comments --minify-css true --minify-js true "$f" -o "$f"
-          done
-          # Minify CSS
-          for f in builds/web/*.css; do
+          done) &
+          (for f in builds/web/*.css; do
             [ -f "$f" ] && cleancss -o "$f" "$f"
-          done
-          # Minify JS
-          for f in builds/web/*.js; do
+          done) &
+          (for f in builds/web/*.js; do
             [ -f "$f" ] && terser "$f" -o "$f" --compress --mangle
-          done
+          done) &
+          wait
           # Minify WASM binaries (enable all features, skip on failure)
           for f in builds/web/*.wasm; do
             if [ -f "$f" ]; then
@@ -78,6 +83,9 @@ jobs:
     name: Deploy to Pages
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
