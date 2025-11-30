@@ -89,15 +89,10 @@ func _populate_game_list():
 	for child in game_list_container.get_children():
 		child.queue_free()
 
-	# Get game list from Director's static list
+	# Get game list from Director's GAME_LIST constant
+	var director = get_parent()
 	var games_dir = "res://games/"
-	var game_list = [
-		"box_pusher",
-		"flappy_bird",
-		"geo_stacker",
-		"money_grabber",
-		"sample_ai_game",
-	]
+	var game_list = director.GAME_LIST if director else []
 
 	for game_id in game_list:
 		var scene_path = games_dir + game_id + "/main.tscn"
