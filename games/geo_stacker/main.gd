@@ -68,6 +68,13 @@ var game_active = true
 var drop_timer = 0.0
 var drop_interval = 0.5  # Faster drops for microgame
 
+# Touch input
+var touch_start_pos: Vector2 = Vector2.ZERO
+var touch_active: bool = false
+var swipe_processed: bool = false  # Track if swipe was already processed
+const SWIPE_THRESHOLD: float = 30.0  # Minimum distance for a swipe
+const TAP_THRESHOLD: float = 10.0  # Maximum distance for a tap (rotation)
+
 func _ready():
 	instruction = "STACK!"
 	super._ready()
@@ -219,25 +226,81 @@ func _rotate_shape(shape: Array) -> Array:
 func _process(delta):
 	if not game_active:
 		return
-	
+
 	if current_piece == null:
 		return
-	
+
 	# Auto-drop timer
 	drop_timer += delta
 	if drop_timer >= drop_interval:
 		drop_timer = 0.0
 		_move_piece(Vector2(0, 1))
-	
-	# Input handling (Arrow keys and WASD via custom actions)
-	if Input.is_action_just_pressed("ui_left") or Input.is_action_just_pressed("move_left"):
-		_move_piece(Vector2(-1, 0))
-	if Input.is_action_just_pressed("ui_right") or Input.is_action_just_pressed("move_right"):
-		_move_piece(Vector2(1, 0))
-	if Input.is_action_just_pressed("ui_down") or Input.is_action_just_pressed("move_down"):
-		_move_piece(Vector2(0, 1))
-	if Input.is_action_just_pressed("ui_up") or Input.is_action_just_pressed("move_up"):
-		_rotate_piece()
+
+func _input(event):
+	if not game_active or current_piece == null:
+		return
+
+	# Touch/Screen input for swipe gestures
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			touch_active = true
+			touch_start_pos = event.position
+			swipe_processed = false
+		else:
+			if touch_active and not swipe_processed:
+				touch_active = false
+				var swipe_vector = event.position - touch_start_pos
+				var swipe_length = swipe_vector.length()
+
+				# Tap to rotate (small movement)
+				if swipe_length < TAP_THRESHOLD:
+					_rotate_piece()
+				# Swipe to move (larger movement)
+				elif swipe_length >= SWIPE_THRESHOLD:
+					# Determine primary direction (largest component)
+					if abs(swipe_vector.x) > abs(swipe_vector.y):
+						# Horizontal swipe
+						if swipe_vector.x > 0:
+							_move_piece(Vector2(1, 0))
+						else:
+							_move_piece(Vector2(-1, 0))
+					else:
+						# Vertical swipe down (fast drop)
+						if swipe_vector.y > 0:
+							_move_piece(Vector2(0, 1))
+
+	# Screen drag for continuous movement during swipe
+	elif event is InputEventScreenDrag and touch_active and not swipe_processed:
+		var swipe_vector = event.position - touch_start_pos
+		var swipe_length = swipe_vector.length()
+
+		# Process swipe as soon as threshold is met
+		if swipe_length >= SWIPE_THRESHOLD:
+			swipe_processed = true
+			if abs(swipe_vector.x) > abs(swipe_vector.y):
+				# Horizontal swipe
+				if swipe_vector.x > 0:
+					_move_piece(Vector2(1, 0))
+				else:
+					_move_piece(Vector2(-1, 0))
+			else:
+				# Vertical swipe down
+				if swipe_vector.y > 0:
+					_move_piece(Vector2(0, 1))
+
+	# Mouse input for desktop compatibility
+	elif event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			# Click on left side = move left, right side = move right, center = rotate
+			var viewport_width = get_viewport_rect().size.x
+			if event.position.x < viewport_width / 3.0:
+				_move_piece(Vector2(-1, 0))
+			elif event.position.x > viewport_width * 2.0 / 3.0:
+				_move_piece(Vector2(1, 0))
+			else:
+				_rotate_piece()
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			_rotate_piece()
 
 func _end_game(did_win: bool):
 	if not game_active:

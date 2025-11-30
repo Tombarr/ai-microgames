@@ -4,7 +4,6 @@ extends Microgame
 const TARGET_SCORE: int = 30
 const HAND_Y_OFFSET: float = 100.0 # From bottom
 const SPAWN_MARGIN: float = 50.0
-const HAND_SPEED: float = 400.0  # Keyboard movement speed
 
 # Sound effects
 const SFX_WIN = preload("res://shared/assets/sfx_win.wav")
@@ -54,24 +53,11 @@ func _process(delta):
 	if not game_active:
 		return
 
-	# 1. Move Hand (Follow Mouse/Touch X or Keyboard)
-	var move_dir = 0.0
-	if Input.is_action_pressed("ui_left") or Input.is_action_pressed("move_left"):
-		move_dir -= 1.0
-	if Input.is_action_pressed("ui_right") or Input.is_action_pressed("move_right"):
-		move_dir += 1.0
-
-	if move_dir != 0.0:
-		# Keyboard movement - direct control
-		hand.position.x += move_dir * HAND_SPEED * speed_multiplier * delta
-		hand.position.x = clamp(hand.position.x, 30, viewport_size.x - 30)
-	else:
-		# Mouse/touch movement - only if no keyboard input
-		var mouse_x = get_viewport().get_mouse_position().x
-		# Only follow mouse if it's significantly different from current position
-		if abs(mouse_x - hand.position.x) > 5.0:
-			hand.position.x = lerp(hand.position.x, mouse_x, 30.0 * delta)
-			hand.position.x = clamp(hand.position.x, 30, viewport_size.x - 30)
+	# 1. Move Hand (Follow Touch/Mouse X position directly)
+	var target_x = get_viewport().get_mouse_position().x
+	# Smooth follow for more natural movement
+	hand.position.x = lerp(hand.position.x, target_x, 20.0 * delta)
+	hand.position.x = clamp(hand.position.x, 30, viewport_size.x - 30)
 
 	# 2. Spawn Rubies
 	spawn_timer -= delta

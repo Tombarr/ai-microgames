@@ -69,12 +69,11 @@ func _ready():
 func _process(delta):
 	time_elapsed += delta
 
-	# Check timeout
+	# Check timeout - surviving 5 seconds is a win!
 	if time_elapsed >= GAME_DURATION:
 		if not game_ended:
-			# Only play lose sound if player didn't score
-			if current_score == 0:
-				$sfx_lose.play()
+			add_score(100)  # Win by survival
+			$sfx_win.play()
 			end_game()
 			game_ended = true
 		return
@@ -103,20 +102,11 @@ func _process(delta):
 	for i in range(pipes.size() - 1, -1, -1):
 		var pipe = pipes[i]
 
-		# Check if bird passed the pipe
+		# Check if bird passed the pipe (just for scoring, not for win condition)
 		if not pipe.get_meta("passed") and pipe.position.x + PIPE_WIDTH < bird.position.x:
 			pipe.set_meta("passed", true)
 			pipes_passed += 1
-			add_score(1)
 			print("Passed pipe! Total: " + str(pipes_passed))
-
-			# Check win condition
-			if pipes_passed >= TARGET_SCORE:
-				add_score(100)  # Bonus for winning
-				$sfx_win.play()
-				end_game()
-				game_ended = true
-				return
 
 		# Check collision with pipe
 		var top_pipe = pipe.get_node("TopPipe")
@@ -142,11 +132,11 @@ func _input(event):
 	if game_ended:
 		return
 
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+	# Touch/tap input for jumping
+	if event is InputEventScreenTouch and event.pressed:
 		bird_velocity = JUMP_VELOCITY
-	elif event is InputEventScreenTouch and event.pressed:
-		bird_velocity = JUMP_VELOCITY
-	elif event.is_action_pressed("jump") or event.is_action_pressed("ui_up") or event.is_action_pressed("move_up"):
+	# Mouse click for desktop compatibility
+	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		bird_velocity = JUMP_VELOCITY
 
 func _spawn_pipe(safe_gap_y: float = -1.0):

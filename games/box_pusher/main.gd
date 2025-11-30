@@ -119,6 +119,11 @@ var game_active = true
 var player_sprite: Sprite2D
 var box_sprite: Sprite2D
 
+# Touch input
+var touch_start_pos: Vector2 = Vector2.ZERO
+var touch_active: bool = false
+const SWIPE_THRESHOLD: float = 30.0  # Minimum distance for a swipe
+
 func _ready():
 	instruction = "PUSH!"
 	super._ready()
@@ -237,18 +242,39 @@ func _update_sprite_pos(sprite, grid_pos):
 func _unhandled_input(event):
 	if not game_active:
 		return
-	
+
 	var dir = Vector2i.ZERO
-	# Arrow keys
-	if event.is_action_pressed("ui_up") or event.is_action_pressed("move_up"):
-		dir = Vector2i.UP
-	elif event.is_action_pressed("ui_down") or event.is_action_pressed("move_down"):
-		dir = Vector2i.DOWN
-	elif event.is_action_pressed("ui_left") or event.is_action_pressed("move_left"):
-		dir = Vector2i.LEFT
-	elif event.is_action_pressed("ui_right") or event.is_action_pressed("move_right"):
-		dir = Vector2i.RIGHT
-		
+
+	# Touch/Screen input for swipe gestures
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			touch_active = true
+			touch_start_pos = event.position
+		else:
+			if touch_active:
+				touch_active = false
+				var swipe_vector = event.position - touch_start_pos
+
+				# Check if swipe is long enough
+				if swipe_vector.length() >= SWIPE_THRESHOLD:
+					# Determine primary direction (largest component)
+					if abs(swipe_vector.x) > abs(swipe_vector.y):
+						dir = Vector2i.RIGHT if swipe_vector.x > 0 else Vector2i.LEFT
+					else:
+						dir = Vector2i.DOWN if swipe_vector.y > 0 else Vector2i.UP
+
+	# Mouse input for desktop testing (single click to move toward click)
+	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var click_pos = event.position
+		var player_screen_pos = level_root.position + (Vector2(player_pos) * TILE_SIZE + Vector2(TILE_SIZE/2.0, TILE_SIZE/2.0)) * level_root.scale
+		var to_click = click_pos - player_screen_pos
+
+		# Determine direction based on which component is larger
+		if abs(to_click.x) > abs(to_click.y):
+			dir = Vector2i.RIGHT if to_click.x > 0 else Vector2i.LEFT
+		else:
+			dir = Vector2i.DOWN if to_click.y > 0 else Vector2i.UP
+
 	if dir != Vector2i.ZERO:
 		_try_move(dir)
 
