@@ -141,7 +141,6 @@ vite.config.ts.timestamp-*
 # Godot 4+ specific ignores
 .godot/
 *.translation
-/export_presets.cfg
 *.tmp
 *.import
 .DS_Store
