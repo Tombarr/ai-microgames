@@ -24,9 +24,11 @@ Social media assets and metadata.
 
 ## Responsibilities
 
-- **OpenGraph Assets:** Generate `og_image.png` (1200x630) combining game sprites and catchy typography.
+- **OpenGraph Assets:** Generate `og_image.png` (1200x630) combining game sprites and catchy
+  typography.
 - **Metadata:** Generate an `index.html` snippet or a sidecar metadata file with:
   - `<meta property="og:title" ... />`
   - `<meta property="og:description" ... />`
   - `<meta property="og:image" ... />`
-- **Copywriting:** Write short, engaging launch tweets/posts ("Can you beat my score in 5 seconds?").
+- **Copywriting:** Write short, engaging launch tweets/posts ("Can you beat my score in 5
+  seconds?").

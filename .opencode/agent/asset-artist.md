@@ -26,5 +26,6 @@ Image files (`.png`, `.svg`) and Audio files (`.wav`, `.ogg`) placed in the `ass
 
 - **Sprite Generation:** Create sprites using available tools or SVG procedural generation.
 - **UI Elements:** Generate simple UI assets (buttons, icons).
-- **Format Compliance:** Ensure assets are import-friendly for Godot (powers of 2 dimensions where possible, transparent backgrounds).
+- **Format Compliance:** Ensure assets are import-friendly for Godot (powers of 2 dimensions where
+  possible, transparent backgrounds).
 - **Placeholder Management:** If generation fails, provide distinct, color-coded placeholders.

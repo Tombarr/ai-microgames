@@ -26,5 +26,7 @@ Pass/Fail report, automatic fix patches.
 ## Responsibilities
 
 - **Static Analysis:** Check if `main.tscn` exists and if the script extends `Microgame`.
-- **Runtime Test:** Run the scene in headless mode (if possible) or parse the `.tscn` file to ensure no missing resources.
-- **Constraint Check:** Verify that a timer or game-over condition exists within the script to prevent infinite loops.
+- **Runtime Test:** Run the scene in headless mode (if possible) or parse the `.tscn` file to ensure
+  no missing resources.
+- **Constraint Check:** Verify that a timer or game-over condition exists within the script to
+  prevent infinite loops.

@@ -25,4 +25,5 @@ SFX and short music loops.
 ## Responsibilities
 
 - **Audio Generation:** Create SFX and music loops using available tools or procedural generation.
-- **Rationale:** Specializing in audio allows for better sfx generation (using tools like sfxr or audiocraft) distinct from image generation pipelines.
+- **Rationale:** Specializing in audio allows for better sfx generation (using tools like sfxr or
+  audiocraft) distinct from image generation pipelines.
