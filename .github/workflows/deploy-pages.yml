@@ -1,0 +1,63 @@
+name: Deploy to GitHub Pages
+
+env:
+  GODOT_VERSION: 4.5.1
+  PROJECT_PATH: /
+  EXPORT_NAME: MicroGamez
+
+on:
+  push:
+    branches:
+      - main
+      - github-action
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build for Web
+    runs-on: ubuntu-24.04  # Use 24.04 with godot 4+
+    container:
+      image: barichello/godot-ci:4.5.1-web
+    
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Setup Export Templates
+        run: |
+          mkdir -v -p ~/.local/share/godot/templates
+          mv /root/.local/share/godot/templates/${{ env.GODOT_VERSION }}.stable ~/.local/share/godot/templates/${{ env.GODOT_VERSION }}.stable
+
+      - name: Build
+        run: |
+          godot --path ${{ env.PROJECT_PATH }} --export "HTML5" builds/web/${{ env.EXPORT_NAME }}.zip
+          mkdir -p builds/web
+          unzip builds/web/${{ env.EXPORT_NAME }}.zip -d builds/web
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          name: web
+          path: builds/web
+
+  deploy:
+    name: Deploy to Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
