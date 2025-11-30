@@ -1,4 +1,4 @@
-extends MicrogameAI
+extends Microgame
 
 # Grid configuration - sized to fill 640x640 viewport with progress bar at bottom
 const GRID_WIDTH = 14
@@ -75,6 +75,9 @@ var progress_bar_fill = null
 var result_label = null
 
 func _ready():
+	instruction = "STACK!"
+	super._ready()
+
 	_initialize_sounds()
 	_initialize_grid()
 	_draw_grid_background()
@@ -304,12 +307,15 @@ func _end_game(did_win: bool):
 		$sfx_lose.play()
 	
 	add_child(result_label)
-	
-	# Call win/lose after a short delay to show the message
+
+	# Call end_game after a short delay to show the message
 	if did_win:
-		get_tree().create_timer(1.0).connect("timeout", win)
+		add_score(100)  # Win score
+		await get_tree().create_timer(1.0).timeout
+		end_game()
 	else:
-		get_tree().create_timer(1.0).connect("timeout", lose)
+		await get_tree().create_timer(1.0).timeout
+		end_game()  # Lose with score 0
 
 func _move_piece(direction: Vector2):
 	if current_piece == null:
