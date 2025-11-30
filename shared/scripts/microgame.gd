@@ -1,10 +1,11 @@
-extends Node
+extends Node2D
 class_name Microgame
 
 signal game_over(score: int)
 signal score_updated(score: int)
 
 var current_score: int = 0
+var speed_multiplier: float = 1.0
 
 func _ready():
     print("Microgame started: " + name)
