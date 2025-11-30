@@ -10,6 +10,10 @@ extends Microgame
 # 4. Faster gravity and jump for responsive feel
 # ========================================
 
+# Sound effects
+const SFX_WIN = preload("res://shared/assets/sfx_win.wav")
+const SFX_LOSE = preload("res://shared/assets/sfx_lose.wav")
+
 # Node references
 @onready var player = $Player
 @onready var obstacle_container = $ObstacleContainer
@@ -61,16 +65,27 @@ var is_crouching: bool = false
 func _ready():
 	instruction = "DODGE!"
 	super._ready()
-	
+
+	# Setup audio
+	var sfx_win = AudioStreamPlayer.new()
+	sfx_win.name = "sfx_win"
+	sfx_win.stream = SFX_WIN
+	add_child(sfx_win)
+
+	var sfx_lose = AudioStreamPlayer.new()
+	sfx_lose.name = "sfx_lose"
+	sfx_lose.stream = SFX_LOSE
+	add_child(sfx_lose)
+
 	# Calculate maximum jump height based on physics
 	# This ensures pipes never exceed what Mario can jump over
 	max_jump_height = (JUMP_VELOCITY * JUMP_VELOCITY) / (2.0 * GRAVITY)
 	print("Max Jump Height Calculated: ", max_jump_height, " pixels")
-	
+
 	# Trigger ground visual redraw
 	if ground_visual:
 		ground_visual.queue_redraw()
-	
+
 	# Start spawning obstacles
 	spawn_timer.start()
 
@@ -84,12 +99,7 @@ func _physics_process(delta):
 	# FIX: Apply faster gravity when not on floor
 	if not player.is_on_floor():
 		player.velocity.y += GRAVITY * delta
-	
-	# FIX: Jump input - ONLY when on floor (prevents double jump)
-	if Input.is_action_just_pressed("ui_accept") or Input.is_action_just_pressed("ui_up"):
-		if player.is_on_floor():
-			player.velocity.y = JUMP_VELOCITY
-	
+
 	# Move player using Godot's built-in physics engine
 	player.move_and_slide()
 
@@ -102,6 +112,9 @@ func _process(delta):
 			# Timeout = success if player survived
 			if obstacles_dodged > 0:
 				add_score(obstacles_dodged * 10)
+				$sfx_win.play()
+			else:
+				$sfx_lose.play()
 			end_game()
 			game_ended = true
 		return
@@ -122,10 +135,22 @@ func _process(delta):
 			obstacle.set_meta("counted", true)
 			obstacles_dodged += 1
 
+func _input(event):
+	if game_ended:
+		return
+
+	# Touch/Click to jump
+	if event is InputEventScreenTouch and event.pressed:
+		if player.is_on_floor():
+			player.velocity.y = JUMP_VELOCITY
+	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if player.is_on_floor():
+			player.velocity.y = JUMP_VELOCITY
+
 func handle_player_input():
 	if game_ended:
 		return
-	
+
 	# Crouch/Duck mechanic (dodges low pipes)
 	if Input.is_action_pressed("ui_down"):
 		is_crouching = true
@@ -148,7 +173,7 @@ func move_obstacles(delta):
 func check_collisions():
 	if game_ended:
 		return
-	
+
 	# Use Area2D's built-in collision detection for accuracy
 	for obstacle in obstacle_container.get_children():
 		if obstacle is Area2D:
@@ -156,6 +181,7 @@ func check_collisions():
 			for body in overlapping_bodies:
 				if body == player:
 					# Collision detected - game over
+					$sfx_lose.play()
 					end_game()
 					game_ended = true
 					return

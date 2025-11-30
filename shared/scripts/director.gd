@@ -38,8 +38,12 @@ var game_title_label: Label
 var status_label: Label
 var game_debugger: Node
 
+# Audio
+var countdown_player: AudioStreamPlayer
+
 func _ready() -> void:
 	_setup_ui()
+	_setup_audio()
 	_setup_debugger()
 	_reset_game_state()
 	# We start the loop deferred to ensure everything is initialized
@@ -154,6 +158,14 @@ func _setup_ui() -> void:
 	status_label.visible = false
 	status_label.z_index = 100  # Ensure on top of game content
 	add_child(status_label)
+
+func _setup_audio() -> void:
+	# Create countdown sound player
+	countdown_player = AudioStreamPlayer.new()
+	countdown_player.name = "CountdownPlayer"
+	countdown_player.stream = load("res://shared/assets/sfx_countdown.wav")
+	countdown_player.volume_db = 6.0  # Increase volume by 6 decibels (about 2x louder)
+	add_child(countdown_player)
 
 func _setup_debugger() -> void:
 	# Load and instantiate the game debugger
@@ -305,12 +317,21 @@ func _on_game_over(game_score: int) -> void:
 	# Show Transition UI
 	_update_ui(round_message)
 	ui_layer.visible = true
-	
-	# Wait 2 seconds
-	await get_tree().create_timer(2.0).timeout
-	
+
+	# Wait 1 second to show result
+	await get_tree().create_timer(1.0).timeout
+
+	# Play countdown sound with pitch based on speed multiplier
+	# Formula: pitch increases as speed increases (1.0x = 1.0 pitch, 5.0x = 2.0 pitch)
+	countdown_player.pitch_scale = 0.8 + (current_speed_multiplier - 1.0) * 0.3
+	countdown_player.play()
+
+	# Wait for countdown to finish (1 second at normal speed, faster at higher speeds)
+	var countdown_duration = 1.0 / countdown_player.pitch_scale
+	await get_tree().create_timer(countdown_duration).timeout
+
 	ui_layer.visible = false
-	
+
 	if is_game_over:
 		_reset_game_state()
 		# Optional: Show a title screen or just restart loop

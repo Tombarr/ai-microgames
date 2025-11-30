@@ -72,8 +72,12 @@ var drop_interval = 0.5  # Faster drops for microgame
 var touch_start_pos: Vector2 = Vector2.ZERO
 var touch_active: bool = false
 var swipe_processed: bool = false  # Track if swipe was already processed
+var drag_dropping: bool = false  # Track if user is drag-dropping the piece
+var last_drag_y: float = 0.0  # Track last drag position for continuous drop
+var mouse_button_held: bool = false  # Track if mouse button is held
 const SWIPE_THRESHOLD: float = 30.0  # Minimum distance for a swipe
 const TAP_THRESHOLD: float = 10.0  # Maximum distance for a tap (rotation)
+const DRAG_DROP_STEP: float = 20.0  # Pixels to drag before moving piece down one cell
 
 func _ready():
 	instruction = "STACK!"
@@ -246,9 +250,11 @@ func _input(event):
 			touch_active = true
 			touch_start_pos = event.position
 			swipe_processed = false
+			drag_dropping = false
 		else:
-			if touch_active and not swipe_processed:
-				touch_active = false
+			touch_active = false
+			drag_dropping = false
+			if not swipe_processed:
 				var swipe_vector = event.position - touch_start_pos
 				var swipe_length = swipe_vector.length()
 
@@ -269,38 +275,83 @@ func _input(event):
 						if swipe_vector.y > 0:
 							_move_piece(Vector2(0, 1))
 
-	# Screen drag for continuous movement during swipe
-	elif event is InputEventScreenDrag and touch_active and not swipe_processed:
+	# Screen drag for continuous drop control
+	elif event is InputEventScreenDrag and touch_active:
 		var swipe_vector = event.position - touch_start_pos
 		var swipe_length = swipe_vector.length()
 
-		# Process swipe as soon as threshold is met
-		if swipe_length >= SWIPE_THRESHOLD:
-			swipe_processed = true
-			if abs(swipe_vector.x) > abs(swipe_vector.y):
-				# Horizontal swipe
-				if swipe_vector.x > 0:
-					_move_piece(Vector2(1, 0))
-				else:
-					_move_piece(Vector2(-1, 0))
-			else:
-				# Vertical swipe down
-				if swipe_vector.y > 0:
-					_move_piece(Vector2(0, 1))
+		# Check if dragging downward
+		if swipe_vector.y > 0 and swipe_length >= SWIPE_THRESHOLD:
+			# Start drag-drop mode
+			if not drag_dropping:
+				drag_dropping = true
+				last_drag_y = touch_start_pos.y
+				swipe_processed = true
 
-	# Mouse input for desktop compatibility
-	elif event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_LEFT:
-			# Click on left side = move left, right side = move right, center = rotate
-			var viewport_width = get_viewport_rect().size.x
-			if event.position.x < viewport_width / 3.0:
-				_move_piece(Vector2(-1, 0))
-			elif event.position.x > viewport_width * 2.0 / 3.0:
+			# Move piece down for every DRAG_DROP_STEP pixels dragged
+			var drag_distance = event.position.y - last_drag_y
+			if drag_distance >= DRAG_DROP_STEP:
+				_move_piece(Vector2(0, 1))
+				last_drag_y = event.position.y
+		# Horizontal drag for left/right movement
+		elif abs(swipe_vector.x) > abs(swipe_vector.y) and swipe_length >= SWIPE_THRESHOLD and not swipe_processed:
+			swipe_processed = true
+			if swipe_vector.x > 0:
 				_move_piece(Vector2(1, 0))
 			else:
-				_rotate_piece()
-		elif event.button_index == MOUSE_BUTTON_RIGHT:
+				_move_piece(Vector2(-1, 0))
+
+	# Mouse input for desktop compatibility
+	elif event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				mouse_button_held = true
+				touch_start_pos = event.position
+				swipe_processed = false
+				drag_dropping = false
+			else:
+				mouse_button_held = false
+				drag_dropping = false
+				# Simple click actions (if not dragged)
+				if not swipe_processed:
+					var viewport_width = get_viewport_rect().size.x
+					if event.position.x < viewport_width / 3.0:
+						_move_piece(Vector2(-1, 0))
+					elif event.position.x > viewport_width * 2.0 / 3.0:
+						_move_piece(Vector2(1, 0))
+					else:
+						_rotate_piece()
+		elif event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 			_rotate_piece()
+
+	# Mouse drag for continuous drop control (desktop)
+	elif event is InputEventMouseMotion and mouse_button_held:
+		var drag_vector = event.position - touch_start_pos
+		var drag_length = drag_vector.length()
+
+		# Check if dragging downward
+		if drag_vector.y > 0 and drag_length >= SWIPE_THRESHOLD:
+			# Start drag-drop mode
+			if not drag_dropping:
+				drag_dropping = true
+				last_drag_y = touch_start_pos.y
+				swipe_processed = true
+
+			# Move piece down for every DRAG_DROP_STEP pixels dragged
+			var drag_distance = event.position.y - last_drag_y
+			if drag_distance >= DRAG_DROP_STEP:
+				_move_piece(Vector2(0, 1))
+				last_drag_y = event.position.y
+
+	# Keyboard input for arrow keys
+	if event.is_action_pressed("ui_left") or event.is_action_pressed("move_left"):
+		_move_piece(Vector2(-1, 0))
+	elif event.is_action_pressed("ui_right") or event.is_action_pressed("move_right"):
+		_move_piece(Vector2(1, 0))
+	elif event.is_action_pressed("ui_down") or event.is_action_pressed("move_down"):
+		_move_piece(Vector2(0, 1))
+	elif event.is_action_pressed("ui_up") or event.is_action_pressed("move_up"):
+		_rotate_piece()
 
 func _end_game(did_win: bool):
 	if not game_active:
