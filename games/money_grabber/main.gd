@@ -45,16 +45,18 @@ func _process(delta):
 		move_dir -= 1.0
 	if Input.is_action_pressed("ui_right") or Input.is_action_pressed("move_right"):
 		move_dir += 1.0
-	
+
 	if move_dir != 0.0:
-		# Keyboard movement
+		# Keyboard movement - direct control
 		hand.position.x += move_dir * HAND_SPEED * speed_multiplier * delta
+		hand.position.x = clamp(hand.position.x, 30, viewport_size.x - 30)
 	else:
-		# Mouse/touch movement
+		# Mouse/touch movement - only if no keyboard input
 		var mouse_x = get_viewport().get_mouse_position().x
-		hand.position.x = lerp(hand.position.x, mouse_x, 30.0 * delta)
-	
-	hand.position.x = clamp(hand.position.x, 30, viewport_size.x - 30)
+		# Only follow mouse if it's significantly different from current position
+		if abs(mouse_x - hand.position.x) > 5.0:
+			hand.position.x = lerp(hand.position.x, mouse_x, 30.0 * delta)
+			hand.position.x = clamp(hand.position.x, 30, viewport_size.x - 30)
 
 	# 2. Spawn Rubies
 	spawn_timer -= delta
