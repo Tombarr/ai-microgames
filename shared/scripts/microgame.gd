@@ -7,6 +7,8 @@ signal score_updated(score: int)
 var current_score: int = 0
 var speed_multiplier: float = 1.0
 var instruction: String = ""
+var time_limit: float = 5.0  # Time limit in seconds (set by Director)
+var game_name: String = ""  # Display name (set by Director)
 
 func _ready():
     print("Microgame started: " + name)

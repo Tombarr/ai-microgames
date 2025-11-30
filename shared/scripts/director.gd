@@ -13,18 +13,51 @@ var current_game: Microgame
 var current_speed_multiplier: float = 1.0
 var score: int = 0
 var lives: int = 3
+var current_time_limit: float = 5.0
+var game_timer: float = 0.0
+var game_active: bool = false
 
 # UI Elements
 var ui_layer: CanvasLayer
 var lives_label: Label
 var score_label: Label
 var message_label: Label
+var progress_bar: ColorRect
+var progress_bar_bg: ColorRect
+var game_title_label: Label
+var status_label: Label
 
 func _ready() -> void:
 	_setup_ui()
 	_reset_game_state()
 	# We start the loop deferred to ensure everything is initialized
 	call_deferred("start_game_loop")
+
+func _process(delta: float) -> void:
+	if not game_active:
+		return
+	
+	game_timer += delta
+	var time_remaining = max(0, current_time_limit - game_timer)
+	var progress = time_remaining / current_time_limit
+	
+	# Update progress bar
+	if progress_bar:
+		var viewport_size = get_viewport().get_visible_rect().size
+		var bar_margin = 5
+		progress_bar.size.x = (viewport_size.x - 2 * bar_margin) * progress
+		
+		# Color transitions from green to yellow to red
+		if progress > 0.5:
+			progress_bar.color = Color(0.2, 0.8, 0.2)  # Green
+		elif progress > 0.25:
+			progress_bar.color = Color(0.9, 0.7, 0.1)  # Yellow
+		else:
+			progress_bar.color = Color(0.9, 0.2, 0.2)  # Red
+	
+	# Check for timeout
+	if time_remaining <= 0:
+		_on_game_timeout()
 
 func _setup_ui() -> void:
 	# Create CanvasLayer to sit above everything
@@ -66,6 +99,45 @@ func _setup_ui() -> void:
 	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	score_label.add_theme_font_size_override("font_size", 32)
 	vbox.add_child(score_label)
+	
+	# Create progress bar at bottom (always visible during game)
+	var viewport_size = get_viewport().get_visible_rect().size
+	var bar_height = 20
+	var bar_margin = 5
+	
+	progress_bar_bg = ColorRect.new()
+	progress_bar_bg.color = Color(0.2, 0.2, 0.2)
+	progress_bar_bg.position = Vector2(bar_margin, viewport_size.y - bar_height - bar_margin)
+	progress_bar_bg.size = Vector2(viewport_size.x - 2 * bar_margin, bar_height)
+	progress_bar_bg.visible = false
+	add_child(progress_bar_bg)
+	
+	progress_bar = ColorRect.new()
+	progress_bar.color = Color(0.2, 0.8, 0.2)  # Start green
+	progress_bar.position = Vector2(bar_margin, viewport_size.y - bar_height - bar_margin)
+	progress_bar.size = Vector2(viewport_size.x - 2 * bar_margin, bar_height)
+	progress_bar.visible = false
+	add_child(progress_bar)
+	
+	# Create game title label (centered, for intro animation)
+	game_title_label = Label.new()
+	game_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	game_title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	game_title_label.add_theme_font_size_override("font_size", 72)
+	game_title_label.size = viewport_size
+	game_title_label.modulate = Color(1, 1, 1, 0)  # Start transparent
+	game_title_label.visible = false
+	add_child(game_title_label)
+	
+	# Create status label (Win/Lose, centered)
+	status_label = Label.new()
+	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	status_label.add_theme_font_size_override("font_size", 96)
+	status_label.size = viewport_size
+	status_label.modulate = Color(1, 1, 1, 0)  # Start transparent
+	status_label.visible = false
+	add_child(status_label)
 
 func _reset_game_state() -> void:
 	current_speed_multiplier = initial_speed
@@ -106,6 +178,10 @@ func _scan_games() -> Array[String]:
 func _load_and_start_game(game_id: String) -> void:
 	print("Director: Loading game - ", game_id)
 	
+	# Generate random time limit between 5-10 seconds
+	current_time_limit = randf_range(5.0, 10.0)
+	game_timer = 0.0
+	
 	# Path to scene
 	var scene_path = games_dir + game_id + "/main.tscn"
 	var game_scene = load(scene_path)
@@ -123,16 +199,39 @@ func _load_and_start_game(game_id: String) -> void:
 		return
 		
 	current_game = game_instance
-	add_child(current_game)
 	
-	# Configure
+	# Configure before adding to tree
 	current_game.speed_multiplier = current_speed_multiplier
+	current_game.time_limit = current_time_limit
+	current_game.game_name = _format_game_name(game_id)
+	
+	# Make game invisible initially for intro animation
+	current_game.modulate = Color(1, 1, 1, 0)
+	add_child(current_game)
 	
 	# Connect signals
 	current_game.game_over.connect(_on_game_over)
 	
+	# Start intro sequence
+	_start_game_intro(current_game.game_name)
+	
 func _on_game_over(game_score: int) -> void:
+	# Prevent double-handling (game already ended)
+	if not game_active:
+		return
+	
+	game_active = false
 	print("Director: Game finished. Score: ", game_score)
+	
+	# Disconnect signal to prevent duplicate calls
+	if is_instance_valid(current_game) and current_game.game_over.is_connected(_on_game_over):
+		current_game.game_over.disconnect(_on_game_over)
+	
+	# Determine win/lose
+	var did_win = game_score > 0
+	
+	# Show Win/Lose status
+	await _show_game_result(did_win)
 	
 	# Cleanup current game
 	if is_instance_valid(current_game):
@@ -141,7 +240,7 @@ func _on_game_over(game_score: int) -> void:
 	# Logic
 	var round_message: String = ""
 	
-	if game_score > 0:
+	if did_win:
 		# Pass
 		score += 1
 		round_message = "PASSED!"
@@ -191,3 +290,72 @@ func _increase_difficulty() -> void:
 	if current_speed_multiplier > max_speed:
 		current_speed_multiplier = max_speed
 	print("Director: Speed increased to ", current_speed_multiplier)
+
+func _format_game_name(game_id: String) -> String:
+	# Convert snake_case or kebab-case to Title Case
+	var words = game_id.replace("_", " ").replace("-", " ").split(" ")
+	var formatted_words = []
+	for word in words:
+		if word.length() > 0:
+			formatted_words.append(word.capitalize())
+	return " ".join(formatted_words)
+
+func _start_game_intro(title: String) -> void:
+	# Show game title
+	game_title_label.text = title
+	game_title_label.visible = true
+	
+	# Fade in title over 0.5 seconds
+	var tween = create_tween()
+	tween.tween_property(game_title_label, "modulate:a", 1.0, 0.5)
+	
+	# Wait 1 second total (0.5 fade in + 0.5 display)
+	await get_tree().create_timer(1.0).timeout
+	
+	# Fade out title and fade in game simultaneously
+	var fade_tween = create_tween()
+	fade_tween.set_parallel(true)
+	fade_tween.tween_property(game_title_label, "modulate:a", 0.0, 0.5)
+	fade_tween.tween_property(current_game, "modulate:a", 1.0, 0.5)
+	
+	await fade_tween.finished
+	
+	game_title_label.visible = false
+	
+	# Show progress bar and start game timer
+	progress_bar.visible = true
+	progress_bar_bg.visible = true
+	game_active = true
+	game_timer = 0.0
+
+func _on_game_timeout() -> void:
+	if not game_active:
+		return
+	
+	print("Director: Game timed out! Player loses.")
+	
+	# Timeout always means loss - call _on_game_over with score 0
+	_on_game_over(0)
+
+func _show_game_result(did_win: bool) -> void:
+	# Hide progress bar
+	progress_bar.visible = false
+	progress_bar_bg.visible = false
+	
+	# Show Win/Lose status
+	status_label.text = "WIN!" if did_win else "LOSE"
+	status_label.modulate = Color(0.2, 0.9, 0.2, 0.0) if did_win else Color(0.9, 0.2, 0.2, 0.0)
+	status_label.visible = true
+	
+	# Fade in status
+	var tween = create_tween()
+	tween.tween_property(status_label, "modulate:a", 1.0, 0.3)
+	
+	# Wait 1 second, then fade out
+	await get_tree().create_timer(1.0).timeout
+	
+	var fade_out = create_tween()
+	fade_out.tween_property(status_label, "modulate:a", 0.0, 0.3)
+	
+	await fade_out.finished
+	status_label.visible = false

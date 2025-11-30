@@ -26,7 +26,7 @@ A structured Game Design Document (GDD) JSON/Markdown.
 
 - **Ideation:** Propose gameplay loops that strictly fit within a 5-second timeframe.
 - **Constraints:** Ensure mechanics are simple enough for rapid implementation and leverage the
-  `MicrogameAI` API.
+  `Microgame` API.
   - Games should have a clear win/loss condition achievable in 5 seconds.
   - Games must be playable in a square aspect ratio (e.g., 640x640).
   - Controls must be simple (touch, click, or single key press).

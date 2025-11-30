@@ -108,6 +108,8 @@ func _input(event):
 		bird_velocity = JUMP_VELOCITY
 	elif event is InputEventScreenTouch and event.pressed:
 		bird_velocity = JUMP_VELOCITY
+	elif event.is_action_pressed("jump") or event.is_action_pressed("ui_up") or event.is_action_pressed("move_up"):
+		bird_velocity = JUMP_VELOCITY
 
 func _spawn_pipe():
 	var pipe = Node2D.new()

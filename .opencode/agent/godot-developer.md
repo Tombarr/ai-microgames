@@ -29,7 +29,7 @@ Godot Scene files (`.tscn`) and GDScript (`.gd`).
 ## Responsibilities
 
 - **Scene Setup:** Create the `games/<game_name>/main.tscn`.
-- **Inheritance:** Strictly extend the `MicrogameAI` class (`res://shared/scripts/microgame_ai.gd`).
+- **Inheritance:** Strictly extend the `Microgame` class (`res://shared/scripts/microgame.gd`).
 - **Scene Generation:** Programmatically build the game's scene within the `_ready()` function. Do
   not create a separate `.tscn` file for the game.
 - **Logic Implementation:**
