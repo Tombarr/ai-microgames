@@ -40,8 +40,8 @@ jobs:
 
       - name: Setup Export Templates
         run: |
-          mkdir -v -p ~/.local/share/godot/templates
-          ln -s /root/.local/share/godot/templates/${{ env.GODOT_VERSION }}.stable ~/.local/share/godot/templates/${{ env.GODOT_VERSION }}.stable
+          mkdir -v -p ~/.local/share/godot/export_templates
+          ln -s /root/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable
 
       - name: Build
         run: |
@@ -58,7 +58,7 @@ jobs:
           for f in builds/web/*.css; do
             [ -f "$f" ] && cleancss -o "$f" "$f"
           done
-          # Minify JS (skip .wasm files)
+          # Minify JS
           for f in builds/web/*.js; do
             [ -f "$f" ] && terser "$f" -o "$f" --compress --mangle
           done
