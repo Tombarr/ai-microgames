@@ -35,9 +35,11 @@ var progress_bar: ColorRect
 var progress_bar_bg: ColorRect
 var game_title_label: Label
 var status_label: Label
+var game_debugger: Node
 
 func _ready() -> void:
 	_setup_ui()
+	_setup_debugger()
 	_reset_game_state()
 	# We start the loop deferred to ensure everything is initialized
 	call_deferred("start_game_loop")
@@ -151,6 +153,43 @@ func _setup_ui() -> void:
 	status_label.visible = false
 	status_label.z_index = 100  # Ensure on top of game content
 	add_child(status_label)
+
+func _setup_debugger() -> void:
+	# Load and instantiate the game debugger
+	var debugger_script = load("res://shared/scripts/game_debugger.gd")
+	game_debugger = CanvasLayer.new()
+	game_debugger.set_script(debugger_script)
+	game_debugger.name = "GameDebugger"
+	add_child(game_debugger)
+
+	# Connect to game selection signal
+	game_debugger.game_selected.connect(_on_debugger_game_selected)
+
+func _on_debugger_game_selected(game_id: String) -> void:
+	print("Director: Loading game from debugger - " + game_id)
+
+	# Stop current game if running
+	if current_game:
+		await _cleanup_current_game()
+
+	# Reset game state for fresh start
+	game_active = false
+	game_timer = 0.0
+
+	# Hide UI elements
+	progress_bar.visible = false
+	progress_bar_bg.visible = false
+	status_label.visible = false
+
+	# Load the selected game
+	_load_and_start_game(game_id)
+
+func _cleanup_current_game():
+	if is_instance_valid(current_game):
+		current_game.queue_free()
+		current_game = null
+		# Wait one frame to ensure the game is fully removed
+		await get_tree().process_frame
 
 func _reset_game_state() -> void:
 	current_speed_multiplier = initial_speed
@@ -310,24 +349,24 @@ func _start_game_intro(title: String) -> void:
 	# Show game title
 	game_title_label.text = title
 	game_title_label.visible = true
-	
-	# Fade in title over 0.5 seconds
+
+	# Fade in title over 0.15 seconds
 	var tween = create_tween()
-	tween.tween_property(game_title_label, "modulate:a", 1.0, 0.5)
-	
-	# Wait 1 second total (0.5 fade in + 0.5 display)
-	await get_tree().create_timer(1.0).timeout
-	
+	tween.tween_property(game_title_label, "modulate:a", 1.0, 0.15)
+
+	# Wait 0.4 seconds total (0.15 fade in + 0.25 display)
+	await get_tree().create_timer(0.4).timeout
+
 	# Fade out title and fade in game simultaneously
 	var fade_tween = create_tween()
 	fade_tween.set_parallel(true)
-	fade_tween.tween_property(game_title_label, "modulate:a", 0.0, 0.5)
-	fade_tween.tween_property(current_game, "modulate:a", 1.0, 0.5)
-	
+	fade_tween.tween_property(game_title_label, "modulate:a", 0.0, 0.15)
+	fade_tween.tween_property(current_game, "modulate:a", 1.0, 0.15)
+
 	await fade_tween.finished
-	
+
 	game_title_label.visible = false
-	
+
 	# Show progress bar and start game timer
 	progress_bar.visible = true
 	progress_bar_bg.visible = true

@@ -8,7 +8,7 @@ const BIRD_SIZE: float = 24.0
 const PIPE_WIDTH: float = 60.0
 const PIPE_GAP: float = 180.0
 const PIPE_SPEED: float = 200.0
-const PIPE_SPACING: float = 250.0
+const PIPE_SPACING: float = 400.0  # Increased spacing between pipes
 const TARGET_SCORE: int = 3  # Need to pass 3 pipes in 5 seconds
 
 # Sound effects
@@ -24,6 +24,7 @@ var viewport_size: Vector2
 var pipes_passed: int = 0
 var next_pipe_x: float = 0.0
 var game_ended: bool = false
+var grace_period: float = 0.3  # Give player time to react before gravity
 
 func _ready():
 	instruction = "TAP!"
@@ -33,7 +34,7 @@ func _ready():
 
 	# Create bird
 	bird = Area2D.new()
-	bird.position = Vector2(viewport_size.x * 0.25, viewport_size.y * 0.5)
+	bird.position = Vector2(viewport_size.x * 0.15, viewport_size.y * 0.4)  # Start slightly higher
 	add_child(bird)
 
 	# Bird visual (yellow circle)
@@ -60,7 +61,7 @@ func _ready():
 
 	# Spawn first pipe farther away to give player time to react
 	# Use bird's starting Y position for the first pipe gap to ensure it's safe
-	next_pipe_x = viewport_size.x * 0.7
+	next_pipe_x = viewport_size.x * 0.8  # Start at 80% from left (near right edge)
 	_spawn_pipe(bird.position.y)
 
 	print("Flappy Bird Started! Pass " + str(TARGET_SCORE) + " pipes!")
@@ -71,7 +72,9 @@ func _process(delta):
 	# Check timeout
 	if time_elapsed >= GAME_DURATION:
 		if not game_ended:
-			$sfx_lose.play()
+			# Only play lose sound if player didn't score
+			if current_score == 0:
+				$sfx_lose.play()
 			end_game()
 			game_ended = true
 		return
@@ -80,8 +83,9 @@ func _process(delta):
 	if game_ended:
 		return
 
-	# Apply gravity with speed multiplier
-	bird_velocity += GRAVITY * speed_multiplier * delta
+	# Apply gravity with speed multiplier (after grace period)
+	if time_elapsed > grace_period:
+		bird_velocity += GRAVITY * speed_multiplier * delta
 	bird.position.y += bird_velocity * delta
 
 	# Check if bird hit floor or ceiling
@@ -164,7 +168,10 @@ func _spawn_pipe(safe_gap_y: float = -1.0):
 	if safe_gap_y > 0:
 		gap_y = safe_gap_y
 	else:
-		gap_y = randf_range(PIPE_GAP, viewport_size.y - PIPE_GAP)
+		# Keep gaps in the middle 60% of screen to avoid spawning too high/low
+		var min_gap = viewport_size.y * 0.3
+		var max_gap = viewport_size.y * 0.7
+		gap_y = randf_range(min_gap, max_gap)
 
 	# Top pipe
 	var top_pipe = _create_pipe_segment(gap_y - PIPE_GAP / 2, true)

@@ -9,6 +9,7 @@ var speed: float = 200.0
 var direction: Vector2
 var viewport_size: Vector2
 var time_elapsed: float = 0.0
+var game_ended: bool = false
 const GAME_DURATION: float = 5.0
 
 func _ready():
@@ -70,9 +71,14 @@ func _process(delta):
 
 	# Timeout check
 	if time_elapsed >= GAME_DURATION:
-		$sfx_lose.play()
-		add_score(0)
-		end_game()
+		if not game_ended:
+			$sfx_lose.play()
+			end_game()
+			game_ended = true
+		return
+
+	# Stop game logic after game ends
+	if game_ended:
 		return
 
 	# Move target with Speed Multiplier
@@ -96,6 +102,10 @@ func _process(delta):
 		direction.y *= -1
 
 func _input(event):
+	# Ignore input after game ends
+	if game_ended:
+		return
+
 	if not is_instance_valid(target):
 		return
 
@@ -112,5 +122,6 @@ func _input(event):
 		add_score(100)
 		$sfx_win.play()
 		end_game()
+		game_ended = true
 		print("TARGET HIT!")
 		target.queue_free()
