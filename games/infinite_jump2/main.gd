@@ -13,6 +13,7 @@ extends Microgame
 # Sound effects
 const SFX_WIN = preload("res://shared/assets/sfx_win.wav")
 const SFX_LOSE = preload("res://shared/assets/sfx_lose.wav")
+const SFX_JUMP = preload("res://games/infinite_jump2/assets/sfx_jump.wav")
 
 # Node references
 @onready var player = $Player
@@ -76,6 +77,11 @@ func _ready():
 	sfx_lose.name = "sfx_lose"
 	sfx_lose.stream = SFX_LOSE
 	add_child(sfx_lose)
+
+	var sfx_jump = AudioStreamPlayer.new()
+	sfx_jump.name = "sfx_jump"
+	sfx_jump.stream = SFX_JUMP
+	add_child(sfx_jump)
 
 	# Calculate maximum jump height based on physics
 	# This ensures pipes never exceed what Mario can jump over
@@ -143,9 +149,11 @@ func _input(event):
 	if event is InputEventScreenTouch and event.pressed:
 		if player.is_on_floor():
 			player.velocity.y = JUMP_VELOCITY
+			$sfx_jump.play()
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		if player.is_on_floor():
 			player.velocity.y = JUMP_VELOCITY
+			$sfx_jump.play()
 
 func handle_player_input():
 	if game_ended:

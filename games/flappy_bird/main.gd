@@ -14,6 +14,8 @@ const TARGET_SCORE: int = 3  # Need to pass 3 pipes in 5 seconds
 # Sound effects
 const SFX_WIN = preload("res://shared/assets/sfx_win.wav")
 const SFX_LOSE = preload("res://shared/assets/sfx_lose.wav")
+const SFX_FLAP = preload("res://games/flappy_bird/assets/sfx_flap.wav")
+const SFX_PASS = preload("res://games/flappy_bird/assets/sfx_pass.wav")
 
 # State
 var bird: Area2D
@@ -58,6 +60,16 @@ func _ready():
 	sfx_lose.name = "sfx_lose"
 	sfx_lose.stream = SFX_LOSE
 	add_child(sfx_lose)
+
+	var sfx_flap = AudioStreamPlayer.new()
+	sfx_flap.name = "sfx_flap"
+	sfx_flap.stream = SFX_FLAP
+	add_child(sfx_flap)
+
+	var sfx_pass = AudioStreamPlayer.new()
+	sfx_pass.name = "sfx_pass"
+	sfx_pass.stream = SFX_PASS
+	add_child(sfx_pass)
 
 	# Spawn first pipe farther away to give player time to react
 	# Use bird's starting Y position for the first pipe gap to ensure it's safe
@@ -106,6 +118,7 @@ func _process(delta):
 		if not pipe.get_meta("passed") and pipe.position.x + PIPE_WIDTH < bird.position.x:
 			pipe.set_meta("passed", true)
 			pipes_passed += 1
+			$sfx_pass.play()
 			print("Passed pipe! Total: " + str(pipes_passed))
 
 		# Check collision with pipe
@@ -135,9 +148,11 @@ func _input(event):
 	# Touch/tap input for jumping
 	if event is InputEventScreenTouch and event.pressed:
 		bird_velocity = JUMP_VELOCITY
+		$sfx_flap.play()
 	# Mouse click for desktop compatibility
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		bird_velocity = JUMP_VELOCITY
+		$sfx_flap.play()
 
 func _spawn_pipe(safe_gap_y: float = -1.0):
 	var pipe = Node2D.new()

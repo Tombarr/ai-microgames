@@ -8,6 +8,9 @@ const SPAWN_MARGIN: float = 50.0
 # Sound effects
 const SFX_WIN = preload("res://shared/assets/sfx_win.wav")
 const SFX_LOSE = preload("res://shared/assets/sfx_lose.wav")
+const SFX_COLLECT_LOW = preload("res://games/money_grabber/assets/sfx_collect_low.wav")
+const SFX_COLLECT_MID = preload("res://games/money_grabber/assets/sfx_collect_mid.wav")
+const SFX_COLLECT_HIGH = preload("res://games/money_grabber/assets/sfx_collect_high.wav")
 
 # Ruby Types configuration
 const RUBY_TYPES = [
@@ -43,6 +46,21 @@ func _ready():
 	sfx_lose.name = "sfx_lose"
 	sfx_lose.stream = SFX_LOSE
 	add_child(sfx_lose)
+
+	var sfx_collect_low = AudioStreamPlayer.new()
+	sfx_collect_low.name = "sfx_collect_low"
+	sfx_collect_low.stream = SFX_COLLECT_LOW
+	add_child(sfx_collect_low)
+
+	var sfx_collect_mid = AudioStreamPlayer.new()
+	sfx_collect_mid.name = "sfx_collect_mid"
+	sfx_collect_mid.stream = SFX_COLLECT_MID
+	add_child(sfx_collect_mid)
+
+	var sfx_collect_high = AudioStreamPlayer.new()
+	sfx_collect_high.name = "sfx_collect_high"
+	sfx_collect_high.stream = SFX_COLLECT_HIGH
+	add_child(sfx_collect_high)
 
 	# Adjust difficulty based on speed_multiplier
 	current_spawn_interval = 0.4 / speed_multiplier
@@ -112,6 +130,14 @@ func _collect_ruby(ruby: Area2D) -> void:
 	var value = ruby.get_meta("value")
 	add_score(value)
 	print("Collected " + str(value) + "! Total: " + str(current_score))
+
+	# Play collection sound based on value
+	if value >= 20:
+		$sfx_collect_high.play()
+	elif value >= 5:
+		$sfx_collect_mid.play()
+	else:
+		$sfx_collect_low.play()
 
 	# Cleanup ruby
 	ruby.queue_free()

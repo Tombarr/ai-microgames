@@ -3,6 +3,7 @@ extends Microgame
 # Sound effects
 const SFX_WIN = preload("res://shared/assets/sfx_win.wav")
 const SFX_LOSE = preload("res://shared/assets/sfx_lose.wav")
+const SFX_HIT = preload("res://games/sample_ai_game/assets/sfx_hit.wav")
 
 var target: Area2D
 var speed: float = 200.0
@@ -60,6 +61,11 @@ func _ready():
 	sfx_lose.name = "sfx_lose"
 	sfx_lose.stream = SFX_LOSE
 	add_child(sfx_lose)
+
+	var sfx_hit = AudioStreamPlayer.new()
+	sfx_hit.name = "sfx_hit"
+	sfx_hit.stream = SFX_HIT
+	add_child(sfx_hit)
 
 	print("Sample Game Started: TAP THE TARGET!")
 
@@ -119,6 +125,7 @@ func _input(event):
 
 	# Check distance to target
 	if pos.distance_to(target.position) < 40:
+		$sfx_hit.play()
 		add_score(100)
 		$sfx_win.play()
 		end_game()

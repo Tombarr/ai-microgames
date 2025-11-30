@@ -219,8 +219,145 @@ def generate_countdown():
 
     save_wav("sfx_countdown.wav", data)
 
+def generate_game_start():
+    # Game start countdown: 3-2-1-GO! with ascending pitch excitement
+    duration = 2.0
+    data = []
+    num_samples = int(duration * SAMPLE_RATE)
+
+    # Four beat timings: 3, 2, 1, GO!
+    beat_times = [0.0, 0.5, 1.0, 1.5]
+    beat_duration = 0.15
+
+    for i in range(num_samples):
+        t = i / SAMPLE_RATE
+        val = 0.0
+
+        for beat_idx, beat_start in enumerate(beat_times):
+            beat_t = t - beat_start
+
+            if 0 <= beat_t < beat_duration:
+                # Ascending pitch for excitement (starts low, ends high)
+                # 3=150Hz, 2=200Hz, 1=250Hz, GO!=350Hz
+                base_freq = 150 + (beat_idx * 67)
+
+                # Layer 1: Bass thump
+                bass = 0.4 * math.sin(2 * math.pi * base_freq * beat_t)
+
+                # Layer 2: Mid punch
+                mid = 0.3 * math.sin(2 * math.pi * base_freq * 2 * beat_t)
+
+                # Layer 3: High sparkle (more on final beat)
+                high_mult = 2.0 if beat_idx == 3 else 1.0
+                high = 0.2 * high_mult * math.sin(2 * math.pi * base_freq * 4 * beat_t)
+
+                # Layer 4: Noise snap
+                noise = 0.15 * random.uniform(-1, 1) * math.exp(-20 * beat_t)
+
+                # Envelope
+                if beat_t < 0.001:
+                    env = beat_t / 0.001
+                else:
+                    env = math.exp(-8 * beat_t)
+
+                val = (bass + mid + high + noise) * env
+                break
+
+        # Soft clipping
+        if abs(val) > 0.7:
+            val = 0.7 + 0.3 * math.tanh((val - 0.7 * (1 if val > 0 else -1)) / 0.3) * (1 if val > 0 else -1)
+
+        data.append(val * 0.95)
+
+    save_wav("sfx_game_start.wav", data)
+
+def generate_game_over():
+    # Epic game over: DUN DUN DEN DUN DEEEN (5 dramatic beats with final sustain)
+    duration = 3.5
+    data = []
+    num_samples = int(duration * SAMPLE_RATE)
+
+    # Five beat timings with dramatic spacing
+    # DUN (0.0), DUN (0.5), DEN (1.0), DUN (1.7), DEEEN (2.4-3.5 sustained)
+    beat_times = [0.0, 0.5, 1.0, 1.7, 2.4]
+    beat_durations = [0.15, 0.15, 0.12, 0.15, 1.1]  # Last beat is LONG
+
+    for i in range(num_samples):
+        t = i / SAMPLE_RATE
+        val = 0.0
+
+        for beat_idx, beat_start in enumerate(beat_times):
+            beat_t = t - beat_start
+            beat_dur = beat_durations[beat_idx]
+
+            if 0 <= beat_t < beat_dur:
+                # Descending pitch progression for tragic feel
+                # Beat 1-2: Low (80Hz), Beat 3: Higher (150Hz), Beat 4: Low (70Hz), Beat 5: VERY low (50Hz)
+                if beat_idx < 2:
+                    base_freq = 80
+                elif beat_idx == 2:
+                    base_freq = 150  # DEN is higher pitch
+                elif beat_idx == 3:
+                    base_freq = 70
+                else:
+                    base_freq = 50  # Final DEEEN is deepest
+
+                # Layer 1: Deep sub-bass
+                sub_bass = 0.5 * math.sin(2 * math.pi * base_freq * beat_t)
+                sub_bass += 0.2 * math.sin(2 * math.pi * base_freq * 0.5 * beat_t)
+
+                # Layer 2: Mid body
+                mid = 0.4 * math.sin(2 * math.pi * base_freq * 2 * beat_t)
+                mid += 0.3 * math.sin(2 * math.pi * base_freq * 3 * beat_t)
+
+                # Layer 3: Upper harmonics
+                high = 0.2 * math.sin(2 * math.pi * base_freq * 5 * beat_t)
+
+                # Layer 4: Noise texture (more on final beat)
+                noise_mult = 1.5 if beat_idx == 4 else 1.0
+                noise = 0.15 * noise_mult * random.uniform(-1, 1) * math.exp(-10 * beat_t)
+
+                # Envelope - final beat sustains longer
+                if beat_idx == 4:
+                    # Long sustained envelope for DEEEN
+                    if beat_t < 0.001:
+                        env = beat_t / 0.001
+                    elif beat_t < 0.3:
+                        env = 1.0
+                    else:
+                        # Slow fade over remaining 0.8 seconds
+                        env = 1.0 - ((beat_t - 0.3) / 0.8)
+                else:
+                    # Normal punchy envelope
+                    if beat_t < 0.001:
+                        env = beat_t / 0.001
+                    elif beat_t < 0.02:
+                        env = 1.0 - 0.3 * ((beat_t - 0.001) / 0.019)
+                    else:
+                        env = 0.7 * math.exp(-6 * (beat_t - 0.02))
+
+                val = (sub_bass + mid + high + noise) * env
+
+                # Add reverb-like tail for final note
+                if beat_idx == 4 and beat_t > 0.5:
+                    reverb_t = beat_t - 0.5
+                    reverb = 0.1 * math.sin(2 * math.pi * base_freq * reverb_t) * math.exp(-3 * reverb_t)
+                    val += reverb
+
+                break
+
+        # Compression
+        if abs(val) > 0.7:
+            val = 0.7 + 0.3 * math.tanh((val - 0.7 * (1 if val > 0 else -1)) / 0.3) * (1 if val > 0 else -1)
+
+        data.append(val * 0.98)
+
+    save_wav("sfx_game_over.wav", data)
+
 if __name__ == "__main__":
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
+    generate_game_start()
+    generate_game_over()
     generate_countdown()
-    print("Generated countdown sound effect!")
+    print("Generated all sound effects!")

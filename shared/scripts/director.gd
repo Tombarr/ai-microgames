@@ -27,6 +27,7 @@ var lives: int = 3
 var current_time_limit: float = 5.0
 var game_timer: float = 0.0
 var game_active: bool = false
+var game_started: bool = false  # Track if initial game start sequence has played
 
 # UI Elements
 var ui_layer: CanvasLayer
@@ -41,6 +42,8 @@ var game_debugger: Node
 
 # Audio
 var countdown_player: AudioStreamPlayer
+var game_start_player: AudioStreamPlayer
+var game_over_player: AudioStreamPlayer
 
 func _ready() -> void:
 	_setup_ui()
@@ -168,6 +171,20 @@ func _setup_audio() -> void:
 	countdown_player.volume_db = 6.0  # Increase volume by 6 decibels (about 2x louder)
 	add_child(countdown_player)
 
+	# Create game start sound player
+	game_start_player = AudioStreamPlayer.new()
+	game_start_player.name = "GameStartPlayer"
+	game_start_player.stream = load("res://shared/assets/sfx_game_start.wav")
+	game_start_player.volume_db = 6.0
+	add_child(game_start_player)
+
+	# Create game over sound player
+	game_over_player = AudioStreamPlayer.new()
+	game_over_player.name = "GameOverPlayer"
+	game_over_player.stream = load("res://shared/assets/sfx_game_over.wav")
+	game_over_player.volume_db = 6.0
+	add_child(game_over_player)
+
 func _setup_debugger() -> void:
 	# Load and instantiate the game debugger
 	var debugger_script = load("res://shared/scripts/game_debugger.gd")
@@ -213,6 +230,12 @@ func _reset_game_state() -> void:
 
 func start_game_loop() -> void:
 	print("Director: Starting Game Loop")
+
+	# Play game start countdown on first run
+	if not game_started:
+		await _show_game_start_sequence()
+		game_started = true
+
 	_play_random_game()
 
 func _play_random_game() -> void:
@@ -334,9 +357,9 @@ func _on_game_over(game_score: int) -> void:
 	ui_layer.visible = false
 
 	if is_game_over:
-		_reset_game_state()
-		# Optional: Show a title screen or just restart loop
-		_play_random_game()
+		# Show game over screen with play again button
+		await _show_game_over_screen()
+		# Note: _on_play_again_pressed will handle restart
 	else:
 		_play_random_game()
 
@@ -404,6 +427,87 @@ func _on_game_timeout() -> void:
 	
 	# Timeout always means loss - call _on_game_over with score 0
 	_on_game_over(0)
+
+func _show_game_start_sequence() -> void:
+	# Show title screen with "GET READY!"
+	game_title_label.text = "GET READY!"
+	game_title_label.visible = true
+
+	# Play countdown sound (same as between rounds)
+	countdown_player.pitch_scale = 0.8 + (current_speed_multiplier - 1.0) * 0.3
+	countdown_player.play()
+
+	# Fade in over 0.3 seconds
+	var tween = create_tween()
+	tween.tween_property(game_title_label, "modulate:a", 1.0, 0.3)
+
+	# Wait for countdown sound to finish
+	var countdown_duration = 1.0 / countdown_player.pitch_scale
+	await get_tree().create_timer(countdown_duration).timeout
+
+	# Fade out
+	var fade_out = create_tween()
+	fade_out.tween_property(game_title_label, "modulate:a", 0.0, 0.3)
+
+	await fade_out.finished
+	game_title_label.visible = false
+
+func _show_game_over_screen() -> void:
+	# Play game over sound
+	game_over_player.play()
+
+	# Show game over UI with final score and play again button
+	ui_layer.visible = true
+
+	# Update labels
+	message_label.text = "GAME OVER"
+	score_label.text = "Final Score: %d" % score
+	lives_label.text = ""
+
+	# Create "Play Again" button
+	var play_again_button = Button.new()
+	play_again_button.text = "PLAY AGAIN"
+	play_again_button.custom_minimum_size = Vector2(200, 60)
+
+	# Style the button
+	play_again_button.add_theme_font_size_override("font_size", 24)
+
+	# Position button below score (find the vbox container)
+	for child in ui_layer.get_children():
+		if child is CenterContainer:
+			for subchild in child.get_children():
+				if subchild is VBoxContainer:
+					play_again_button.name = "PlayAgainButton"
+					subchild.add_child(play_again_button)
+					break
+			break
+
+	# Connect button signal
+	play_again_button.pressed.connect(_on_play_again_pressed)
+
+	# Wait for game over sound to finish (3.5 seconds)
+	await get_tree().create_timer(3.5).timeout
+
+func _on_play_again_pressed() -> void:
+	# Remove the play again button
+	for child in ui_layer.get_children():
+		if child is CenterContainer:
+			for subchild in child.get_children():
+				if subchild is VBoxContainer:
+					var button = subchild.get_node_or_null("PlayAgainButton")
+					if button:
+						button.queue_free()
+					break
+			break
+
+	# Hide UI
+	ui_layer.visible = false
+
+	# Reset game state
+	_reset_game_state()
+
+	# Start new game loop
+	_play_random_game()
 
 func _show_game_result(did_win: bool) -> void:
 	# Hide progress bar
