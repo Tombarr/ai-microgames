@@ -40,7 +40,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          apt-get update && apt-get install -y npm binaryen libfontconfig1
+          apt-get update && apt-get install -y npm libfontconfig1
           npm install -g html-minifier-terser clean-css-cli terser
 
       - name: Setup Export Templates
@@ -66,12 +66,6 @@ jobs:
             [ -f "$f" ] && terser "$f" -o "$f" --compress --mangle
           done) &
           wait
-          # Minify WASM binaries (enable all features, skip on failure)
-          for f in builds/web/*.wasm; do
-            if [ -f "$f" ]; then
-              wasm-opt -Oz --all-features "$f" -o "$f.opt" && mv "$f.opt" "$f" || echo "Skipping WASM optimization for $f"
-            fi
-          done
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
