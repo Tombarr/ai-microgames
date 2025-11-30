@@ -15,6 +15,7 @@ const GAME_LIST: Array[String] = [
 	"loop_connect",
 	"money_grabber",
 	"sample_ai_game",
+	"whack_a_mole",
 ]
 @export var speed_increment: float = 0.2
 @export var max_speed: float = 5.0
