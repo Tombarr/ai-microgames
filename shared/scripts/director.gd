@@ -10,7 +10,6 @@ extends Node
 const GAME_LIST: Array[String] = [
 	"balloon_popper",
 	"box_pusher",
-	"dont_touch",
 	"flappy_bird",
 	"geo_stacker",
 	"infinite_jump2",
