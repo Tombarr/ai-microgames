@@ -58,9 +58,9 @@ func _ready() -> void:
 	call_deferred("start_game_loop")
 
 func _process(delta: float) -> void:
-	# Check for Escape key to show leaderboard
-	if Input.is_action_just_pressed("ui_cancel"):  # Escape key
-		_on_escape_pressed()
+	# Check for Tab key to show leaderboard (hold Tab to view)
+	if Input.is_physical_key_pressed(KEY_TAB) and game_active:
+		_on_tab_pressed()
 		return
 
 	if not game_active:
@@ -864,7 +864,7 @@ func _on_share_pressed() -> void:
 					break
 			break
 
-func _on_escape_pressed() -> void:
+func _on_tab_pressed() -> void:
 	# Pause the game
 	get_tree().paused = true
 	game_active = false
