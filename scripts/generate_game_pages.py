@@ -104,7 +104,7 @@ def generate_meta_tags(game_id: str, meta: dict, base_url: str, site_name: str) 
 def generate_game_script(game_id: str) -> str:
     """Generate JavaScript to set the game parameter before Godot loads."""
     return f'''
-    <script>
+    <script type="text/javascript">
         // Pre-set game parameter for this permalink
         (function() {{
             if (!window.location.search.includes('game=')) {{

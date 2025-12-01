@@ -15,6 +15,7 @@ const GAME_LIST: Array[String] = [
 	"geo_stacker",
 	"infinite_jump2",
 	"loop_connect",
+	"minesweeper",
 	"money_grabber",
 	"space_invaders",
 	"whack_a_mole",
