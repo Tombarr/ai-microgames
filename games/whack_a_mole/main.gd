@@ -5,13 +5,8 @@ enum MoleState { HIDDEN, RISING, VISIBLE, HIDING, HIT }
 
 var game_ended: bool = false
 var time_elapsed: float = 0.0
-var moles_missed: int = 0
-const MAX_MISSES: int = 1  # One miss = game over
-const GAME_DURATION: float = 5.0
-
-# Sound effects
-const SFX_WIN = preload("res://shared/assets/sfx_win.wav")
-const SFX_LOSE = preload("res://shared/assets/sfx_lose.wav")
+var moles_hit: int = 0
+const MOLES_TO_WIN: int = 5  # Must hit 5 moles to win
 
 # Color Palette (PICO-8 inspired with warmer grass)
 var COLOR_PALETTE = {
@@ -46,35 +41,30 @@ const GRID_OFFSET: Vector2 = Vector2(170, 200)
 
 # Mole timing
 var mole_spawn_timer: float = 0.0
-var base_spawn_interval: float = 1.5
+var spawn_interval: float = 0.0
 
 func _ready():
 	instruction = "WHACK!"
 	super._ready()
-
-	# Setup audio
-	var sfx_win = AudioStreamPlayer.new()
-	sfx_win.name = "sfx_win"
-	sfx_win.stream = SFX_WIN
-	add_child(sfx_win)
-
-	var sfx_lose = AudioStreamPlayer.new()
-	sfx_lose.name = "sfx_lose"
-	sfx_lose.stream = SFX_LOSE
-	add_child(sfx_lose)
-
+	
+	# Calculate spawn interval to ensure at least 5 moles spawn
+	# Need to spawn 5 moles within time_limit
+	# Each mole takes time to: rise (0.3s) + be visible (0.8-1.5s avg 1.15s) + hide (0.3s)
+	# Average mole lifecycle: ~1.75 seconds
+	# To guarantee 5 moles can be hit, we need good spacing
+	# Spawn interval = (time_limit - buffer) / 5
+	var buffer = 1.0  # Give player 1 second buffer at the end
+	spawn_interval = max(0.8, (time_limit - buffer) / MOLES_TO_WIN)
+	
 	# Generate all textures
 	_create_grass_texture()
 	_create_hole_texture()
 	_create_mole_texture()
 	_create_mole_hit_texture()
-
+	
 	# Create background
 	_create_background()
-
-	# Create UI
-	_create_ui()
-
+	
 	# Create mole grid
 	_create_mole_grid()
 
@@ -211,10 +201,6 @@ func _create_background():
 	bg_sprite.z_index = -1
 	add_child(bg_sprite)
 
-func _create_ui():
-	# UI removed - one miss = instant game over, no need to display counter
-	pass
-
 func _create_mole_grid():
 	for row in range(GRID_SIZE):
 		for col in range(GRID_SIZE):
@@ -248,23 +234,26 @@ func _create_mole_grid():
 
 func _process(delta):
 	time_elapsed += delta
-
-	# Check for timeout
-	if time_elapsed >= GAME_DURATION:
+	
+	# Check for timeout (Director handles this, but we track for safety)
+	if time_elapsed >= time_limit:
 		if not game_ended:
-			$sfx_lose.play()
+			# If player didn't hit 5 moles before time ran out, they lose
+			if moles_hit < MOLES_TO_WIN:
+				current_score = 0  # Reset score so Director sees this as a loss
+			# Otherwise score stays positive and player wins
+			
 			end_game()
 			game_ended = true
 		return
-
+	
 	# Stop processing after game ends
 	if game_ended:
 		return
 	
-	# Update mole spawn timer (faster with speed_multiplier)
+	# Update mole spawn timer
 	mole_spawn_timer += delta
-	var current_spawn_interval = base_spawn_interval / speed_multiplier
-	if mole_spawn_timer >= current_spawn_interval:
+	if mole_spawn_timer >= spawn_interval:
 		mole_spawn_timer = 0.0
 		_spawn_random_mole()
 	
@@ -288,7 +277,9 @@ func _update_mole(mole: Dictionary, delta: float):
 			if progress >= 1.0:
 				mole.state = MoleState.VISIBLE
 				mole.timer = 0.0
-				mole.visible_time = randf_range(0.5, 1.2) / speed_multiplier
+				# Keep moles visible long enough to be hittable
+				# At higher speeds, make them visible a bit longer
+				mole.visible_time = randf_range(0.8, 1.5)
 		
 		MoleState.VISIBLE:
 			mole.timer += delta
@@ -296,9 +287,11 @@ func _update_mole(mole: Dictionary, delta: float):
 			var bob = sin(mole.timer * 8.0) * 2.0
 			mole.mole_sprite.position = mole.position + Vector2(0, mole.y_offset + bob)
 			
-			if mole.timer >= mole.visible_time:
+			# Check if mole timed out AND wasn't hit
+			if mole.timer >= mole.visible_time and not mole.was_hit:
 				mole.state = MoleState.HIDING
 				mole.timer = 0.0
+				# was_hit is already false from spawn
 		
 		MoleState.HIDING:
 			mole.timer += delta * speed_multiplier
@@ -308,21 +301,10 @@ func _update_mole(mole: Dictionary, delta: float):
 			mole.mole_sprite.position = mole.position + Vector2(0, 56 + mole.y_offset)
 			
 			if progress >= 1.0:
+				# Reset mole state (no need to track misses anymore)
 				mole.state = MoleState.HIDDEN
 				mole.timer = 0.0
 				mole.y_offset = 0.0
-				
-				# Check if mole was missed (escaped without being hit)
-				if not mole.was_hit:
-					moles_missed += 1
-					print("Mole missed! Game Over!")
-
-					# One miss = instant game over
-					if not game_ended:
-						$sfx_lose.play()
-						end_game()
-						game_ended = true
-
 				mole.was_hit = false
 				mole.mole_sprite.texture = mole_texture
 		
@@ -337,6 +319,7 @@ func _update_mole(mole: Dictionary, delta: float):
 			if mole.timer >= hit_duration:
 				mole.state = MoleState.HIDING
 				mole.timer = 0.0
+				# Keep was_hit = true so HIDING state knows this mole was hit
 
 func _spawn_random_mole():
 	# Find hidden moles
@@ -349,7 +332,7 @@ func _spawn_random_mole():
 		var random_mole = hidden_moles[randi() % hidden_moles.size()]
 		random_mole.state = MoleState.RISING
 		random_mole.timer = 0.0
-		random_mole.was_hit = false
+		random_mole.was_hit = false  # New mole starts as not hit
 
 func _unhandled_input(event):
 	if game_ended:
@@ -378,3 +361,11 @@ func _hit_mole(mole: Dictionary):
 		mole.was_hit = true
 		mole.mole_sprite.texture = mole_hit_texture
 		add_score(10)  # Use Microgame's add_score method
+		moles_hit += 1
+		
+		# Check if player has hit enough moles to win
+		if moles_hit >= MOLES_TO_WIN:
+			if not game_ended:
+				# Win! End game with positive score
+				end_game()
+				game_ended = true
