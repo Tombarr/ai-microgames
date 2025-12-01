@@ -36,7 +36,8 @@ func _load_leaderboard() -> void:
 	var headers = [
 		"apikey: " + SUPABASE_KEY,
 		"Authorization: Bearer " + SUPABASE_KEY,
-		"Content-Type: application/json"
+		"Content-Type: application/json",
+		"Accept-Encoding: identity"  # Request uncompressed response for web builds
 	]
 
 	var error = http_request.request(url, headers, HTTPClient.METHOD_GET)
@@ -137,7 +138,8 @@ func add_entry(player_name: String, score: int) -> void:
 		"apikey: " + SUPABASE_KEY,
 		"Authorization: Bearer " + SUPABASE_KEY,
 		"Content-Type: application/json",
-		"Prefer: return=representation"
+		"Prefer: return=representation",
+		"Accept-Encoding: identity"  # Request uncompressed response for web builds
 	]
 
 	var body = JSON.stringify(new_entry)
