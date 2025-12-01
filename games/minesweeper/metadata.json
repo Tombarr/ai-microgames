@@ -1,0 +1,28 @@
+{
+  "title": "Minesweeper",
+  "description": "Classic mine-finding puzzle on a 5x5 grid! Find the golden stars without clicking bombs. 4 unique maps, each requiring only 1-2 clicks to win.",
+  "tags": ["puzzle", "minesweeper", "logic", "classic", "strategy"],
+  "seo_keywords": [
+    "minesweeper game",
+    "mine sweeper puzzle",
+    "logic puzzle",
+    "bomb game",
+    "classic game",
+    "microgame"
+  ],
+  "difficulty": "Medium",
+  "genre": "Puzzle / Logic",
+  "playtime": "5 seconds per round",
+  "controls": "Mouse / Touch to click tiles",
+  "features": [
+    "5x5 grid with multiple bomb patterns",
+    "4 handcrafted maps",
+    "1-2 click win condition",
+    "Golden star goal indicators",
+    "First click always safe",
+    "Classic number-based logic"
+  ],
+  "og_image": "assets/og_image.png",
+  "one_liner": "Find the stars. Avoid the bombs. Think fast.",
+  "tagline": "The classic mine puzzle, now in 5 seconds"
+}
