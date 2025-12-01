@@ -1,0 +1,20 @@
+{
+  "title": "Money Grabber",
+  "description": "Catch falling gems with your hand! Green gems are worth 1, blue worth 5, and rare red gems worth 20. Collect 30 points to win!",
+  "tags": ["collection", "catching", "gems", "arcade", "reflex"],
+  "seo_keywords": [
+    "catching game",
+    "gem collecting game",
+    "money game",
+    "arcade game",
+    "reflex game",
+    "microgame"
+  ],
+  "difficulty": "Medium",
+  "genre": "Arcade / Collection",
+  "playtime": "5 seconds per round",
+  "controls": "Mouse / Touch to move",
+  "og_image": "assets/og_image.png",
+  "one_liner": "Catch gems. Get rich. Beat the clock.",
+  "tagline": "Every gem counts when you only have 5 seconds"
+}

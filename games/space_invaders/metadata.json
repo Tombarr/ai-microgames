@@ -1,0 +1,20 @@
+{
+  "title": "Space Invaders",
+  "description": "The arcade classic reimagined! Blast all the aliens before they reach you. Move and shoot to defend Earth in 5 seconds.",
+  "tags": ["shooter", "classic", "arcade", "aliens", "retro"],
+  "seo_keywords": [
+    "space invaders game",
+    "shooter game",
+    "alien game",
+    "arcade shooter",
+    "retro game",
+    "microgame"
+  ],
+  "difficulty": "Medium",
+  "genre": "Shooter / Arcade",
+  "playtime": "5 seconds per round",
+  "controls": "Arrow Keys to move, Space to shoot",
+  "og_image": "assets/og_image.png",
+  "one_liner": "Aliens incoming. Shoot them all.",
+  "tagline": "Earth's fate decided in 5 seconds"
+}
