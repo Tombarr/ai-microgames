@@ -24,6 +24,7 @@ const GAME_LIST: Array[String] = [
 @export var max_lives: int = 3
 
 var current_game: Microgame
+var current_game_id: String = ""  # Track current game ID for sharing
 var current_speed_multiplier: float = 1.0
 var score: int = 0
 var lives: int = 3
@@ -239,7 +240,13 @@ func start_game_loop() -> void:
 		await _show_game_start_sequence()
 		game_started = true
 
-	_play_random_game()
+	# Check for game ID in URL query parameter
+	var url_game = _get_url_game_param()
+	if url_game != "" and url_game in GAME_LIST:
+		print("Director: Starting with game from URL - " + url_game)
+		_load_and_start_game(url_game)
+	else:
+		_play_random_game()
 
 func _play_random_game() -> void:
 	var games = _scan_games()
@@ -262,11 +269,17 @@ func _scan_games() -> Array[String]:
 
 func _load_and_start_game(game_id: String) -> void:
 	print("Director: Loading game - ", game_id)
-	
+
+	# Store current game ID for sharing
+	current_game_id = game_id
+
+	# Update URL with current game (for sharing)
+	_update_url_game_param(game_id)
+
 	# Generate random time limit between 5-10 seconds
 	current_time_limit = randf_range(5.0, 10.0)
 	game_timer = 0.0
-	
+
 	# Path to scene
 	var scene_path = games_dir + game_id + "/main.tscn"
 	var game_scene = load(scene_path)
@@ -559,6 +572,13 @@ func _show_play_again_button() -> void:
 	leaderboard_button.custom_minimum_size = Vector2(200, 60)
 	leaderboard_button.add_theme_font_size_override("font_size", 24)
 
+	# Create "Share" button
+	var share_button = Button.new()
+	share_button.text = "SHARE"
+	share_button.custom_minimum_size = Vector2(200, 50)
+	share_button.add_theme_font_size_override("font_size", 20)
+	share_button.name = "ShareButton"
+
 	# Position buttons below score
 	for child in ui_layer.get_children():
 		if child is CenterContainer:
@@ -566,12 +586,14 @@ func _show_play_again_button() -> void:
 				if subchild is VBoxContainer:
 					subchild.add_child(leaderboard_button)
 					subchild.add_child(play_again_button)
+					subchild.add_child(share_button)
 					break
 			break
 
 	# Connect button signals
 	play_again_button.pressed.connect(_on_play_again_pressed)
 	leaderboard_button.pressed.connect(_on_leaderboard_pressed)
+	share_button.pressed.connect(_on_share_pressed)
 
 func _on_leaderboard_pressed() -> void:
 	await _show_leaderboard()
@@ -659,3 +681,93 @@ func _show_game_result(did_win: bool) -> void:
 	
 	await fade_out.finished
 	status_label.visible = false
+
+# =============================================================================
+# URL Sharing Functions (Web Export Only)
+# =============================================================================
+
+## Get game ID from URL query parameter (?game=xxx)
+func _get_url_game_param() -> String:
+	if OS.has_feature("web"):
+		var js_code = """
+			(function() {
+				var params = new URLSearchParams(window.location.search);
+				return params.get('game') || '';
+			})();
+		"""
+		var result = JavaScriptBridge.eval(js_code)
+		if result != null and result is String:
+			return result
+	return ""
+
+## Update URL with current game ID (without page reload)
+func _update_url_game_param(game_id: String) -> void:
+	if OS.has_feature("web"):
+		var js_code = """
+			(function() {
+				var url = new URL(window.location);
+				url.searchParams.set('game', '%s');
+				window.history.replaceState({}, '', url);
+			})();
+		""" % game_id
+		JavaScriptBridge.eval(js_code)
+
+## Share the current game using Web Share API or clipboard fallback
+func _share_current_game() -> void:
+	if not OS.has_feature("web"):
+		print("Share is only available in web builds")
+		return
+
+	if current_game_id.is_empty():
+		print("No game to share")
+		return
+
+	var game_name = _format_game_name(current_game_id)
+	var js_code = """
+		(function() {
+			var shareData = {
+				title: 'Play %s!',
+				text: 'Try this microgame!',
+				url: window.location.href
+			};
+			if (navigator.share) {
+				navigator.share(shareData).catch(function(err) {
+					// User cancelled or error - fall back to clipboard
+					navigator.clipboard.writeText(window.location.href);
+				});
+			} else {
+				navigator.clipboard.writeText(window.location.href).then(function() {
+					// Success - clipboard API worked
+				}).catch(function() {
+					// Fallback for older browsers
+					var textArea = document.createElement('textarea');
+					textArea.value = window.location.href;
+					document.body.appendChild(textArea);
+					textArea.select();
+					document.execCommand('copy');
+					document.body.removeChild(textArea);
+				});
+			}
+			return true;
+		})();
+	""" % game_name
+	JavaScriptBridge.eval(js_code)
+
+func _on_share_pressed() -> void:
+	_share_current_game()
+
+	# Update button text to show feedback
+	for child in ui_layer.get_children():
+		if child is CenterContainer:
+			for subchild in child.get_children():
+				if subchild is VBoxContainer:
+					var share_button = subchild.get_node_or_null("ShareButton")
+					if share_button:
+						share_button.text = "LINK COPIED!"
+						# Reset text after 2 seconds
+						get_tree().create_timer(2.0).timeout.connect(func():
+							if is_instance_valid(share_button):
+								share_button.text = "SHARE"
+						)
+					break
+			break
