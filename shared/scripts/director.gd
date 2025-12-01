@@ -58,19 +58,24 @@ func _ready() -> void:
 	call_deferred("start_game_loop")
 
 func _process(delta: float) -> void:
+	# Check for Escape key to show leaderboard
+	if Input.is_action_just_pressed("ui_cancel"):  # Escape key
+		_on_escape_pressed()
+		return
+
 	if not game_active:
 		return
-	
+
 	game_timer += delta
 	var time_remaining = max(0, current_time_limit - game_timer)
 	var progress = time_remaining / current_time_limit
-	
+
 	# Update progress bar
 	if progress_bar:
 		var viewport_size = get_viewport().get_visible_rect().size
 		var bar_margin = 5
 		progress_bar.size.x = (viewport_size.x - 2 * bar_margin) * progress
-		
+
 		# Color transitions from green to yellow to red
 		if progress > 0.5:
 			progress_bar.color = Color(0.2, 0.8, 0.2)  # Green
@@ -78,7 +83,7 @@ func _process(delta: float) -> void:
 			progress_bar.color = Color(0.9, 0.7, 0.1)  # Yellow
 		else:
 			progress_bar.color = Color(0.9, 0.2, 0.2)  # Red
-	
+
 	# Check for timeout
 	if time_remaining <= 0:
 		_on_game_timeout()
@@ -858,3 +863,70 @@ func _on_share_pressed() -> void:
 						)
 					break
 			break
+
+func _on_escape_pressed() -> void:
+	# Pause the game
+	get_tree().paused = true
+	game_active = false
+
+	# Hide progress bar
+	progress_bar.visible = false
+	progress_bar_bg.visible = false
+
+	# Show leaderboard overlay
+	message_label.text = "GAME PAUSED"
+	score_label.text = "Current Score: %d" % score
+	lives_label.text = ""
+	ui_layer.visible = true
+
+	# Create resume button
+	var resume_button = Button.new()
+	resume_button.name = "ResumeButton"
+	resume_button.text = "RESUME"
+	resume_button.custom_minimum_size = Vector2(400, 60)
+	resume_button.add_theme_font_size_override("font_size", 24)
+	resume_button.pressed.connect(_on_resume_pressed)
+
+	# Add resume button to UI
+	for child in ui_layer.get_children():
+		if child is CenterContainer:
+			for subchild in child.get_children():
+				if subchild is VBoxContainer:
+					subchild.add_child(resume_button)
+					break
+			break
+
+	# Show leaderboard below
+	await _show_leaderboard(false)
+
+func _on_resume_pressed() -> void:
+	# Remove pause UI elements
+	for child in ui_layer.get_children():
+		if child is CenterContainer:
+			for subchild in child.get_children():
+				if subchild is VBoxContainer:
+					# Remove all buttons and containers
+					var resume_button = subchild.get_node_or_null("ResumeButton")
+					if resume_button:
+						resume_button.queue_free()
+					var button_row = subchild.get_node_or_null("ButtonRow")
+					if button_row:
+						button_row.queue_free()
+					var scroll = subchild.get_node_or_null("LeaderboardScroll")
+					if scroll:
+						scroll.queue_free()
+					break
+			break
+
+	# Hide UI layer
+	ui_layer.visible = false
+	message_label.text = ""
+	score_label.text = ""
+
+	# Show progress bar again
+	progress_bar.visible = true
+	progress_bar_bg.visible = true
+
+	# Resume the game
+	game_active = true
+	get_tree().paused = false
