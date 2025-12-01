@@ -15,6 +15,10 @@ run/main_scene="res://main.tscn"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 config/icon="res://icon.svg"
 
+[autoload]
+
+LeaderboardManager="*res://shared/scripts/leaderboard_manager.gd"
+
 [display]
 
 window/size/viewport_width=640

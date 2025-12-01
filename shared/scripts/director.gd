@@ -459,7 +459,7 @@ func _show_game_over_screen() -> void:
 	# Play game over sound
 	game_over_player.play()
 
-	# Show game over UI with final score and play again button
+	# Show game over UI with final score
 	ui_layer.visible = true
 
 	# Update labels
@@ -467,32 +467,117 @@ func _show_game_over_screen() -> void:
 	score_label.text = "Final Score: %d" % score
 	lives_label.text = ""
 
-	# Create "Play Again" button
-	var play_again_button = Button.new()
-	play_again_button.text = "PLAY AGAIN"
-	play_again_button.custom_minimum_size = Vector2(200, 60)
+	# Wait for game over sound to finish (3.5 seconds)
+	await get_tree().create_timer(3.5).timeout
 
-	# Style the button
-	play_again_button.add_theme_font_size_override("font_size", 24)
+	# Check if player made top 10
+	if LeaderboardManager.is_top_10(score):
+		await _show_name_entry()
+	else:
+		_show_play_again_button()
 
-	# Position button below score (find the vbox container)
+func _show_name_entry() -> void:
+	message_label.text = "TOP 10 SCORE!"
+	score_label.text = "Final Score: %d\nEnter Your Name:" % score
+
+	# Create name input field
+	var name_input = LineEdit.new()
+	name_input.name = "NameInput"
+	name_input.placeholder_text = "PLAYER"
+	name_input.max_length = 12
+	name_input.custom_minimum_size = Vector2(300, 50)
+	name_input.add_theme_font_size_override("font_size", 24)
+	name_input.alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+	# Create submit button
+	var submit_button = Button.new()
+	submit_button.name = "SubmitButton"
+	submit_button.text = "SUBMIT"
+	submit_button.custom_minimum_size = Vector2(200, 60)
+	submit_button.add_theme_font_size_override("font_size", 24)
+
+	# Add to UI
 	for child in ui_layer.get_children():
 		if child is CenterContainer:
 			for subchild in child.get_children():
 				if subchild is VBoxContainer:
-					play_again_button.name = "PlayAgainButton"
+					subchild.add_child(name_input)
+					subchild.add_child(submit_button)
+					break
+			break
+
+	# Focus input
+	name_input.grab_focus()
+
+	# Connect signals
+	submit_button.pressed.connect(_on_submit_name.bind(name_input))
+	name_input.text_submitted.connect(func(_text): _on_submit_name(name_input))
+
+func _on_submit_name(name_input: LineEdit) -> void:
+	var player_name = name_input.text.strip_edges()
+
+	if player_name.is_empty():
+		player_name = "PLAYER"
+
+	# Remove name entry UI
+	var submit_button = ui_layer.get_node_or_null("CenterContainer/VBoxContainer/SubmitButton")
+	if submit_button:
+		submit_button.queue_free()
+	name_input.queue_free()
+
+	# Show submitting message
+	message_label.text = "SUBMITTING..."
+	score_label.text = "Please wait..."
+
+	# Submit to leaderboard
+	LeaderboardManager.add_entry(player_name, score)
+
+	# Wait for submission to complete
+	await LeaderboardManager.score_submitted
+
+	# Show result
+	message_label.text = "SCORE SUBMITTED!"
+	score_label.text = "Final Score: %d" % score
+
+	await get_tree().create_timer(1.5).timeout
+
+	# Show leaderboard
+	await _show_leaderboard()
+
+func _show_play_again_button() -> void:
+	# Create "Play Again" button
+	var play_again_button = Button.new()
+	play_again_button.name = "PlayAgainButton"
+	play_again_button.text = "PLAY AGAIN"
+	play_again_button.custom_minimum_size = Vector2(200, 60)
+	play_again_button.add_theme_font_size_override("font_size", 24)
+
+	# Add "View Leaderboard" button
+	var leaderboard_button = Button.new()
+	leaderboard_button.name = "LeaderboardButton"
+	leaderboard_button.text = "LEADERBOARD"
+	leaderboard_button.custom_minimum_size = Vector2(200, 60)
+	leaderboard_button.add_theme_font_size_override("font_size", 24)
+
+	# Position buttons below score
+	for child in ui_layer.get_children():
+		if child is CenterContainer:
+			for subchild in child.get_children():
+				if subchild is VBoxContainer:
+					subchild.add_child(leaderboard_button)
 					subchild.add_child(play_again_button)
 					break
 			break
 
-	# Connect button signal
+	# Connect button signals
 	play_again_button.pressed.connect(_on_play_again_pressed)
+	leaderboard_button.pressed.connect(_on_leaderboard_pressed)
 
-	# Wait for game over sound to finish (3.5 seconds)
-	await get_tree().create_timer(3.5).timeout
+func _on_leaderboard_pressed() -> void:
+	await _show_leaderboard()
 
-func _on_play_again_pressed() -> void:
-	# Remove the play again button
+func _show_leaderboard() -> void:
+	# Clear existing buttons
 	for child in ui_layer.get_children():
 		if child is CenterContainer:
 			for subchild in child.get_children():
@@ -500,6 +585,46 @@ func _on_play_again_pressed() -> void:
 					var button = subchild.get_node_or_null("PlayAgainButton")
 					if button:
 						button.queue_free()
+					button = subchild.get_node_or_null("LeaderboardButton")
+					if button:
+						button.queue_free()
+					break
+			break
+
+	message_label.text = "LEADERBOARD"
+	score_label.text = "Loading..."
+
+	# Fetch leaderboard
+	LeaderboardManager._load_leaderboard()
+	await LeaderboardManager.leaderboard_loaded
+
+	# Display leaderboard
+	var leaderboard = LeaderboardManager.get_leaderboard()
+	var text = ""
+
+	for i in range(leaderboard.size()):
+		var entry = leaderboard[i]
+		var rank = i + 1
+		var suffix = LeaderboardManager.get_rank_suffix(rank)
+		text += "%d%s: %s - %d\n" % [rank, suffix, entry["name"], entry["score"]]
+
+	if leaderboard.is_empty():
+		text = "No scores yet!\nBe the first!"
+
+	score_label.text = text
+
+	# Show play again button
+	_show_play_again_button()
+
+func _on_play_again_pressed() -> void:
+	# Remove all UI buttons
+	for child in ui_layer.get_children():
+		if child is CenterContainer:
+			for subchild in child.get_children():
+				if subchild is VBoxContainer:
+					for button_child in subchild.get_children():
+						if button_child is Button:
+							button_child.queue_free()
 					break
 			break
 

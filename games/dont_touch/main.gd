@@ -86,7 +86,7 @@ func _create_buttons():
 		style_normal.border_width_right = 3
 		style_normal.border_width_top = 3
 		style_normal.border_width_bottom = 3
-		style_normal.border_color = Color.WHITE
+		style_normal.border_color = Color.BLACK
 
 		var style_hover = StyleBoxFlat.new()
 		style_hover.bg_color = color.lightened(0.2)
@@ -98,7 +98,7 @@ func _create_buttons():
 		style_hover.border_width_right = 4
 		style_hover.border_width_top = 4
 		style_hover.border_width_bottom = 4
-		style_hover.border_color = Color.YELLOW
+		style_hover.border_color = Color.BLACK
 
 		button.add_theme_stylebox_override("normal", style_normal)
 		button.add_theme_stylebox_override("hover", style_hover)
