@@ -865,8 +865,7 @@ func _on_share_pressed() -> void:
 			break
 
 func _on_tab_pressed() -> void:
-	# Pause the game
-	get_tree().paused = true
+	# Stop game timer but don't pause the tree yet
 	game_active = false
 
 	# Hide progress bar
@@ -899,7 +898,16 @@ func _on_tab_pressed() -> void:
 	# Show leaderboard below
 	await _show_leaderboard(false)
 
+	# Now pause the tree after everything is set up
+	# Set UI layer to process even when paused
+	ui_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	get_tree().paused = true
+
 func _on_resume_pressed() -> void:
+	# Unpause the tree first
+	get_tree().paused = false
+	ui_layer.process_mode = Node.PROCESS_MODE_INHERIT
+
 	# Remove pause UI elements
 	for child in ui_layer.get_children():
 		if child is CenterContainer:
@@ -929,4 +937,3 @@ func _on_resume_pressed() -> void:
 
 	# Resume the game
 	game_active = true
-	get_tree().paused = false
