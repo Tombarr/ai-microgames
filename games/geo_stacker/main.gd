@@ -67,6 +67,9 @@ var lines_cleared = 0
 var game_active = true
 var drop_timer = 0.0
 var drop_interval = 0.5  # Faster drops for microgame
+var time_elapsed: float = 0.0
+var game_ended: bool = false
+const GAME_DURATION: float = 5.0
 
 # Touch input
 var touch_start_pos: Vector2 = Vector2.ZERO
@@ -228,6 +231,20 @@ func _rotate_shape(shape: Array) -> Array:
 	return normalized
 
 func _process(delta):
+	time_elapsed += delta
+
+	# Check timeout - always let full 5 seconds run for Director
+	if time_elapsed >= GAME_DURATION:
+		if not game_ended:
+			# Timeout = fail (no lines cleared)
+			_end_game(false)
+			game_ended = true
+		return
+
+	# Stop game logic after win/lose
+	if game_ended:
+		return
+
 	if not game_active:
 		return
 
@@ -357,13 +374,14 @@ func _end_game(did_win: bool):
 	if not game_active:
 		return
 	game_active = false
-	
+	game_ended = true
+
 	if did_win:
 		$sfx_win.play()
 		add_score(1)
 	else:
 		$sfx_lose.play()
-	
+
 	end_game()
 
 func _move_piece(direction: Vector2):

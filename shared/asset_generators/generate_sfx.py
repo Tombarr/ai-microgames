@@ -354,10 +354,235 @@ def generate_game_over():
 
     save_wav("sfx_game_over.wav", data)
 
+def generate_laser_shoot():
+    # Quick laser shot: High frequency zap with downward sweep
+    duration = 0.15
+    data = []
+    num_samples = int(duration * SAMPLE_RATE)
+
+    for i in range(num_samples):
+        t = i / SAMPLE_RATE
+
+        # Frequency sweep from 1200Hz down to 800Hz
+        freq = 1200 - 400 * (t / duration)
+
+        # Layer 1: Main laser tone
+        laser = 0.5 * math.sin(2 * math.pi * freq * t)
+
+        # Layer 2: Harmonic overtone for brightness
+        overtone = 0.3 * math.sin(2 * math.pi * freq * 2 * t)
+
+        # Layer 3: High frequency sparkle
+        sparkle = 0.15 * math.sin(2 * math.pi * freq * 4 * t)
+
+        # Layer 4: Noise for texture
+        noise = 0.1 * random.uniform(-1, 1) * math.exp(-15 * t)
+
+        # Fast attack, quick decay envelope
+        if t < 0.005:
+            env = t / 0.005
+        else:
+            env = 1.0 - ((t - 0.005) / (duration - 0.005))
+
+        val = (laser + overtone + sparkle + noise) * env
+
+        # Soft clipping
+        if abs(val) > 0.7:
+            val = 0.7 + 0.3 * math.tanh((val - 0.7 * (1 if val > 0 else -1)) / 0.3) * (1 if val > 0 else -1)
+
+        data.append(val * 0.9)
+
+    save_wav("sfx_laser_shoot.wav", data)
+
+def generate_alien_explode():
+    # Alien death: Descending pitch burst with satisfying pop
+    duration = 0.2
+    data = []
+    num_samples = int(duration * SAMPLE_RATE)
+
+    for i in range(num_samples):
+        t = i / SAMPLE_RATE
+
+        # Descending pitch from 400Hz to 100Hz
+        freq = 400 - 300 * (t / duration)
+
+        # Layer 1: Main explosion tone
+        explosion = 0.4 * math.sin(2 * math.pi * freq * t)
+
+        # Layer 2: Sub-harmonic for depth
+        sub = 0.3 * math.sin(2 * math.pi * freq * 0.5 * t)
+
+        # Layer 3: Upper harmonic
+        upper = 0.2 * math.sin(2 * math.pi * freq * 1.5 * t)
+
+        # Layer 4: Heavy noise burst for "pop"
+        noise = 0.5 * random.uniform(-1, 1) * math.exp(-12 * t)
+
+        # Sharp attack, exponential decay
+        if t < 0.002:
+            env = t / 0.002
+        else:
+            env = math.exp(-8 * (t - 0.002))
+
+        val = (explosion + sub + upper + noise) * env
+
+        # Compression
+        if abs(val) > 0.7:
+            val = 0.7 + 0.3 * math.tanh((val - 0.7 * (1 if val > 0 else -1)) / 0.3) * (1 if val > 0 else -1)
+
+        data.append(val * 0.95)
+
+    save_wav("sfx_alien_explode.wav", data)
+
+def generate_laser():
+    # Space Invaders: Futuristic pew sound with downward sweep
+    duration = 0.1
+    data = []
+    num_samples = int(duration * SAMPLE_RATE)
+
+    for i in range(num_samples):
+        t = i / SAMPLE_RATE
+
+        # Sharp frequency sweep from 2000Hz down to 800Hz
+        progress = t / duration
+        freq = 2000 - 1200 * progress
+
+        # Layer 1: Main laser tone (sine wave)
+        laser = 0.5 * math.sin(2 * math.pi * freq * t)
+
+        # Layer 2: Harmonic overtone for brightness
+        overtone = 0.25 * math.sin(2 * math.pi * freq * 2.5 * t)
+
+        # Layer 3: High frequency sparkle
+        sparkle = 0.15 * math.sin(2 * math.pi * freq * 4 * t)
+
+        # Layer 4: Noise for laser texture
+        noise = 0.2 * random.uniform(-1, 1) * math.exp(-20 * t)
+
+        # Very fast attack, quick decay envelope for punchy sound
+        if t < 0.003:
+            env = t / 0.003
+        else:
+            env = 1.0 - ((t - 0.003) / (duration - 0.003))
+
+        val = (laser + overtone + sparkle + noise) * env
+
+        # Soft clipping for loudness
+        if abs(val) > 0.7:
+            val = 0.7 + 0.3 * math.tanh((val - 0.7 * (1 if val > 0 else -1)) / 0.3) * (1 if val > 0 else -1)
+
+        data.append(val * 0.92)
+
+    save_wav("sfx_laser.wav", data)
+
+def generate_alien_explode():
+    # Space Invaders: Satisfying alien explosion/pop sound
+    duration = 0.3
+    data = []
+    num_samples = int(duration * SAMPLE_RATE)
+
+    for i in range(num_samples):
+        t = i / SAMPLE_RATE
+
+        # Descending pitch from 500Hz to 80Hz for satisfying "pop"
+        progress = t / duration
+        freq = 500 - 420 * progress
+
+        # Layer 1: Main explosion tone
+        explosion = 0.4 * math.sin(2 * math.pi * freq * t)
+
+        # Layer 2: Sub-harmonic for depth and body
+        sub = 0.3 * math.sin(2 * math.pi * freq * 0.5 * t)
+
+        # Layer 3: Upper harmonic for brightness
+        upper = 0.25 * math.sin(2 * math.pi * freq * 1.8 * t)
+
+        # Layer 4: Heavy noise burst for explosive "pop" texture
+        noise = 0.6 * random.uniform(-1, 1) * math.exp(-10 * t)
+
+        # Layer 5: Mid-range crunch
+        crunch = 0.2 * math.sin(2 * math.pi * 800 * t) * math.exp(-15 * t)
+
+        # Sharp attack, exponential decay for satisfying impact
+        if t < 0.002:
+            env = t / 0.002
+        elif t < 0.05:
+            env = 1.0 - 0.3 * ((t - 0.002) / 0.048)
+        else:
+            env = 0.7 * math.exp(-6 * (t - 0.05))
+
+        val = (explosion + sub + upper + noise + crunch) * env
+
+        # Compression for maximum satisfaction
+        if abs(val) > 0.7:
+            val = 0.7 + 0.3 * math.tanh((val - 0.7 * (1 if val > 0 else -1)) / 0.3) * (1 if val > 0 else -1)
+
+        data.append(val * 0.95)
+
+    save_wav("sfx_alien_explode.wav", data)
+
+def generate_button_press():
+    # Don't Touch: Harsh buzzer/wrong sound when player fails
+    duration = 0.4
+    data = []
+    num_samples = int(duration * SAMPLE_RATE)
+
+    for i in range(num_samples):
+        t = i / SAMPLE_RATE
+
+        # Dissonant frequencies for "wrong" feeling
+        freq1 = 200  # Base frequency
+        freq2 = 290  # Dissonant interval (tritone-ish)
+        freq3 = 150  # Low rumble
+
+        # Layer 1: Harsh square wave (buzzer sound)
+        square1 = 0.5 if math.sin(2 * math.pi * freq1 * t) > 0 else -0.5
+        square2 = 0.4 if math.sin(2 * math.pi * freq2 * t) > 0 else -0.4
+
+        # Layer 2: Low frequency rumble for impact
+        rumble = 0.3 * math.sin(2 * math.pi * freq3 * t)
+
+        # Layer 3: Harsh noise for texture
+        noise = 0.3 * random.uniform(-1, 1)
+
+        # Layer 4: High frequency "screech" that fades quickly
+        screech = 0.2 * math.sin(2 * math.pi * 1500 * t) * math.exp(-8 * t)
+
+        # Envelope: Quick attack, sustained, then fade
+        if t < 0.01:
+            env = t / 0.01
+        elif t < 0.15:
+            env = 1.0
+        else:
+            env = 1.0 - ((t - 0.15) / (duration - 0.15))
+
+        val = (square1 + square2 + rumble + noise * 0.5 + screech) * env
+
+        # Hard clipping for harsh, unpleasant sound
+        if abs(val) > 0.8:
+            val = 0.8 + 0.2 * math.tanh((val - 0.8 * (1 if val > 0 else -1)) / 0.2) * (1 if val > 0 else -1)
+
+        data.append(val * 0.9)
+
+    save_wav("sfx_button_press.wav", data)
+
 if __name__ == "__main__":
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
+
+    # Generate all sound effects
+    generate_move()
+    generate_push()
+    generate_win()
+    generate_lose()
+    generate_countdown()
     generate_game_start()
     generate_game_over()
-    generate_countdown()
+    generate_laser_shoot()
+
+    # New game-specific sounds
+    generate_laser()
+    generate_alien_explode()
+    generate_button_press()
+
     print("Generated all sound effects!")

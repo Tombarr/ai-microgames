@@ -27,11 +27,25 @@ var current_spawn_interval: float = 0.4
 var viewport_size: Vector2
 var game_active: bool = true
 
+# UI
+var score_label: Label
+
 func _ready():
-	instruction = "COLLECT!"
+	instruction = "GRAB 30!"
 	super._ready()
 
 	viewport_size = get_viewport_rect().size
+
+	# Create score display
+	score_label = Label.new()
+	score_label.position = Vector2(20, 20)
+	score_label.z_index = 100
+	score_label.add_theme_font_size_override("font_size", 48)
+	score_label.add_theme_color_override("font_color", Color.WHITE)
+	score_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	score_label.add_theme_constant_override("outline_size", 4)
+	score_label.text = "0 / 30"
+	add_child(score_label)
 
 	# Create Hand
 	hand = _create_area(Vector2(viewport_size.x / 2, viewport_size.y - HAND_Y_OFFSET), 30.0, Color("ffccaa"), Vector2(60, 60))
@@ -129,6 +143,9 @@ func _spawn_ruby() -> void:
 func _collect_ruby(ruby: Area2D) -> void:
 	var value = ruby.get_meta("value")
 	add_score(value)
+
+	# Update score display
+	score_label.text = str(current_score) + " / 30"
 	print("Collected " + str(value) + "! Total: " + str(current_score))
 
 	# Play collection sound based on value

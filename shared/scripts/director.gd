@@ -9,12 +9,14 @@ extends Node
 # Static list of games for web export compatibility (DirAccess doesn't work in browser)
 const GAME_LIST: Array[String] = [
 	"box_pusher",
+	"dont_touch",
 	"flappy_bird",
 	"geo_stacker",
 	"infinite_jump2",
 	"loop_connect",
 	"money_grabber",
 	"sample_ai_game",
+	"space_invaders",
 	"whack_a_mole",
 ]
 @export var speed_increment: float = 0.2
