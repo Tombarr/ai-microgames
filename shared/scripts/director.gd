@@ -8,6 +8,7 @@ extends Node
 
 # Static list of games for web export compatibility (DirAccess doesn't work in browser)
 const GAME_LIST: Array[String] = [
+	"balloon_popper",
 	"box_pusher",
 	"dont_touch",
 	"flappy_bird",
@@ -15,7 +16,6 @@ const GAME_LIST: Array[String] = [
 	"infinite_jump2",
 	"loop_connect",
 	"money_grabber",
-	"sample_ai_game",
 	"space_invaders",
 	"whack_a_mole",
 ]

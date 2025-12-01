@@ -36,6 +36,8 @@ var button_tweens: Array[Tween] = []
 
 # Sound effects
 const SFX_BUTTON_PRESS = preload("res://shared/assets/sfx_button_press.wav")
+const SFX_WIN = preload("res://shared/assets/sfx_win.wav")
+const SFX_LOSE = preload("res://shared/assets/sfx_lose.wav")
 
 func _ready():
 	instruction = "DON'T TOUCH!"
@@ -46,6 +48,16 @@ func _ready():
 	sfx_button.name = "sfx_button_press"
 	sfx_button.stream = SFX_BUTTON_PRESS
 	add_child(sfx_button)
+
+	var sfx_win = AudioStreamPlayer.new()
+	sfx_win.name = "sfx_win"
+	sfx_win.stream = SFX_WIN
+	add_child(sfx_win)
+
+	var sfx_lose = AudioStreamPlayer.new()
+	sfx_lose.name = "sfx_lose"
+	sfx_lose.stream = SFX_LOSE
+	add_child(sfx_lose)
 
 	# Create tempting buttons
 	_create_buttons()
@@ -150,6 +162,7 @@ func _on_button_pressed(button: Button):
 
 	# Player failed - they clicked a button!
 	$sfx_button_press.play()
+	$sfx_lose.play()
 	end_game()  # Score stays at 0 = loss
 	game_ended = true
 
@@ -174,6 +187,7 @@ func _process(delta):
 	if time_elapsed >= GAME_DURATION:
 		if not game_ended:
 			add_score(100)  # Win!
+			$sfx_win.play()
 			end_game()
 			game_ended = true
 		return

@@ -26,6 +26,8 @@ var spawn_timer: float = 0.0
 var current_spawn_interval: float = 0.4
 var viewport_size: Vector2
 var game_active: bool = true
+var time_elapsed: float = 0.0
+const GAME_DURATION: float = 5.0
 
 # UI
 var score_label: Label
@@ -82,6 +84,22 @@ func _ready():
 	print("Money Grabber Started! Collect " + str(TARGET_SCORE) + " value!")
 
 func _process(delta):
+	time_elapsed += delta
+
+	# Check timeout
+	if time_elapsed >= GAME_DURATION:
+		if game_active:
+			game_active = false
+			# Only win if reached target, otherwise lose
+			if current_score >= TARGET_SCORE:
+				$sfx_win.play()
+			else:
+				# Reset score to 0 for loss
+				current_score = 0
+				$sfx_lose.play()
+			end_game()
+		return
+
 	if not game_active:
 		return
 
@@ -91,11 +109,12 @@ func _process(delta):
 	hand.position.x = lerp(hand.position.x, target_x, 20.0 * delta)
 	hand.position.x = clamp(hand.position.x, 30, viewport_size.x - 30)
 
-	# 2. Spawn Rubies
+	# 2. Spawn Rubies (accelerate with speed_multiplier)
 	spawn_timer -= delta
 	if spawn_timer <= 0:
 		_spawn_ruby()
-		spawn_timer = (current_spawn_interval * randf_range(0.8, 1.2))
+		# Spawn faster at higher speeds
+		spawn_timer = (current_spawn_interval * randf_range(0.8, 1.2)) / speed_multiplier
 
 	# 3. Move Rubies & Check Collisions
 	for i in range(rubies.size() - 1, -1, -1):

@@ -7,6 +7,11 @@ var game_ended: bool = false
 var time_elapsed: float = 0.0
 var moles_missed: int = 0
 const MAX_MISSES: int = 1  # One miss = game over
+const GAME_DURATION: float = 5.0
+
+# Sound effects
+const SFX_WIN = preload("res://shared/assets/sfx_win.wav")
+const SFX_LOSE = preload("res://shared/assets/sfx_lose.wav")
 
 # Color Palette (PICO-8 inspired with warmer grass)
 var COLOR_PALETTE = {
@@ -46,19 +51,30 @@ var base_spawn_interval: float = 1.5
 func _ready():
 	instruction = "WHACK!"
 	super._ready()
-	
+
+	# Setup audio
+	var sfx_win = AudioStreamPlayer.new()
+	sfx_win.name = "sfx_win"
+	sfx_win.stream = SFX_WIN
+	add_child(sfx_win)
+
+	var sfx_lose = AudioStreamPlayer.new()
+	sfx_lose.name = "sfx_lose"
+	sfx_lose.stream = SFX_LOSE
+	add_child(sfx_lose)
+
 	# Generate all textures
 	_create_grass_texture()
 	_create_hole_texture()
 	_create_mole_texture()
 	_create_mole_hit_texture()
-	
+
 	# Create background
 	_create_background()
-	
+
 	# Create UI
 	_create_ui()
-	
+
 	# Create mole grid
 	_create_mole_grid()
 
@@ -232,14 +248,15 @@ func _create_mole_grid():
 
 func _process(delta):
 	time_elapsed += delta
-	
-	# Check for timeout (Director handles this, but we track for safety)
-	if time_elapsed >= time_limit:
+
+	# Check for timeout
+	if time_elapsed >= GAME_DURATION:
 		if not game_ended:
+			$sfx_lose.play()
 			end_game()
 			game_ended = true
 		return
-	
+
 	# Stop processing after game ends
 	if game_ended:
 		return
@@ -299,12 +316,13 @@ func _update_mole(mole: Dictionary, delta: float):
 				if not mole.was_hit:
 					moles_missed += 1
 					print("Mole missed! Game Over!")
-					
+
 					# One miss = instant game over
 					if not game_ended:
+						$sfx_lose.play()
 						end_game()
 						game_ended = true
-				
+
 				mole.was_hit = false
 				mole.mole_sprite.texture = mole_texture
 		

@@ -3,7 +3,7 @@ extends Microgame
 # Sound effects
 const SFX_WIN = preload("res://shared/assets/sfx_win.wav")
 const SFX_LOSE = preload("res://shared/assets/sfx_lose.wav")
-const SFX_HIT = preload("res://games/sample_ai_game/assets/sfx_hit.wav")
+const SFX_HIT = preload("res://games/balloon_popper/assets/sfx_hit.wav")
 
 var target: Area2D
 var speed: float = 200.0
@@ -14,7 +14,7 @@ var game_ended: bool = false
 const GAME_DURATION: float = 5.0
 
 func _ready():
-	instruction = "TAP!"
+	instruction = "POP!"
 	super._ready()
 
 	viewport_size = get_viewport_rect().size
@@ -24,22 +24,33 @@ func _ready():
 	target.position = viewport_size / 2
 	add_child(target)
 
-	# Add visual (red circle)
+	# Add visual (balloon shape)
 	var sprite = Sprite2D.new()
 	var grad_tex = GradientTexture2D.new()
 	grad_tex.width = 80
-	grad_tex.height = 80
+	grad_tex.height = 100  # Taller for balloon shape
 	grad_tex.fill = GradientTexture2D.FILL_RADIAL
-	grad_tex.fill_from = Vector2(0.5, 0.5)
+	grad_tex.fill_from = Vector2(0.5, 0.4)  # Offset upward for balloon shape
 	grad_tex.fill_to = Vector2(0.5, 0.0)
 
 	var grad = Gradient.new()
-	grad.colors = [Color.RED, Color.RED, Color(1.0, 0.0, 0.0, 0.0)]
-	grad.offsets = [0.0, 0.9, 1.0]
+	# Bright balloon red with shine
+	grad.colors = [Color(1.0, 0.2, 0.2), Color(1.0, 0.0, 0.0), Color(0.8, 0.0, 0.0, 0.0)]
+	grad.offsets = [0.0, 0.85, 1.0]
 	grad_tex.gradient = grad
 
 	sprite.texture = grad_tex
+	sprite.position.y = -5  # Move balloon body up slightly
 	target.add_child(sprite)
+
+	# Add balloon string (thin line)
+	var string_line = Line2D.new()
+	string_line.add_point(Vector2(0, 40))  # Bottom of balloon
+	string_line.add_point(Vector2(-5, 60))  # Slight curve
+	string_line.add_point(Vector2(0, 80))  # End of string
+	string_line.default_color = Color(0.3, 0.3, 0.3)
+	string_line.width = 2
+	target.add_child(string_line)
 
 	# Add collision shape
 	var collision = CollisionShape2D.new()
@@ -67,7 +78,7 @@ func _ready():
 	sfx_hit.stream = SFX_HIT
 	add_child(sfx_hit)
 
-	print("Sample Game Started: TAP THE TARGET!")
+	print("Balloon Popper Started: POP THE BALLOON!")
 
 func _process(delta):
 	if not is_instance_valid(target):
@@ -130,5 +141,5 @@ func _input(event):
 		$sfx_win.play()
 		end_game()
 		game_ended = true
-		print("TARGET HIT!")
+		print("BALLOON POPPED!")
 		target.queue_free()
