@@ -52,6 +52,13 @@ func _on_request_completed(result: int, response_code: int, headers: PackedStrin
 	if is_loading:
 		is_loading = false
 
+		# Enhanced error logging for debugging
+		if result != HTTPRequest.RESULT_SUCCESS:
+			push_error("HTTP Request failed with result code: " + str(result))
+			print("Result code meanings: 1=Can't connect, 2=Can't resolve, 3=Connection error, 4=TLS error, 5=Request failed, 6=Redirect limit")
+			leaderboard_loaded.emit(false)
+			return
+
 		if response_code == 200:
 			var json = JSON.new()
 			var parse_result = json.parse(body_string)
@@ -73,6 +80,8 @@ func _on_request_completed(result: int, response_code: int, headers: PackedStrin
 		else:
 			push_error("Failed to load leaderboard. Response code: " + str(response_code))
 			print("Response body: ", body_string)
+			if response_code == 0:
+				print("Response code 0 often indicates CORS issues on web builds")
 			leaderboard_loaded.emit(false)
 
 	elif is_submitting:

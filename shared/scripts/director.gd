@@ -579,13 +579,13 @@ func _show_play_again_button() -> void:
 	share_button.add_theme_font_size_override("font_size", 24)
 	share_button.name = "ShareButton"
 
-	# Position buttons below score
+	# Position buttons below score (play again first for visibility)
 	for child in ui_layer.get_children():
 		if child is CenterContainer:
 			for subchild in child.get_children():
 				if subchild is VBoxContainer:
-					subchild.add_child(leaderboard_button)
 					subchild.add_child(play_again_button)
+					subchild.add_child(leaderboard_button)
 					subchild.add_child(share_button)
 					break
 			break
@@ -637,7 +637,7 @@ func _show_leaderboard(show_leaderboard_button: bool = true) -> void:
 	# Create ScrollContainer for leaderboard
 	var scroll_container = ScrollContainer.new()
 	scroll_container.name = "LeaderboardScroll"
-	scroll_container.custom_minimum_size = Vector2(400, 300)
+	scroll_container.custom_minimum_size = Vector2(400, 200)
 	scroll_container.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 
 	# Create label for leaderboard entries
