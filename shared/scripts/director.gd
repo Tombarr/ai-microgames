@@ -554,29 +554,29 @@ func _on_submit_name(name_input: LineEdit) -> void:
 
 	await get_tree().create_timer(1.5).timeout
 
-	# Show leaderboard
-	await _show_leaderboard()
+	# Show leaderboard without leaderboard button
+	await _show_leaderboard(false)
 
 func _show_play_again_button() -> void:
 	# Create "Play Again" button
 	var play_again_button = Button.new()
 	play_again_button.name = "PlayAgainButton"
 	play_again_button.text = "PLAY AGAIN"
-	play_again_button.custom_minimum_size = Vector2(200, 60)
+	play_again_button.custom_minimum_size = Vector2(250, 60)
 	play_again_button.add_theme_font_size_override("font_size", 24)
 
 	# Add "View Leaderboard" button
 	var leaderboard_button = Button.new()
 	leaderboard_button.name = "LeaderboardButton"
 	leaderboard_button.text = "LEADERBOARD"
-	leaderboard_button.custom_minimum_size = Vector2(200, 60)
+	leaderboard_button.custom_minimum_size = Vector2(250, 60)
 	leaderboard_button.add_theme_font_size_override("font_size", 24)
 
-	# Create "Share" button
+	# Create "Share" button - larger and more prominent
 	var share_button = Button.new()
 	share_button.text = "SHARE"
-	share_button.custom_minimum_size = Vector2(200, 50)
-	share_button.add_theme_font_size_override("font_size", 20)
+	share_button.custom_minimum_size = Vector2(250, 60)
+	share_button.add_theme_font_size_override("font_size", 24)
 	share_button.name = "ShareButton"
 
 	# Position buttons below score
@@ -598,18 +598,29 @@ func _show_play_again_button() -> void:
 func _on_leaderboard_pressed() -> void:
 	await _show_leaderboard()
 
-func _show_leaderboard() -> void:
-	# Clear existing buttons
+func _show_leaderboard(show_leaderboard_button: bool = true) -> void:
+	# Clear existing buttons and UI elements
 	for child in ui_layer.get_children():
 		if child is CenterContainer:
 			for subchild in child.get_children():
 				if subchild is VBoxContainer:
+					# Remove buttons
 					var button = subchild.get_node_or_null("PlayAgainButton")
 					if button:
 						button.queue_free()
 					button = subchild.get_node_or_null("LeaderboardButton")
 					if button:
 						button.queue_free()
+					button = subchild.get_node_or_null("ShareButton")
+					if button:
+						button.queue_free()
+					button = subchild.get_node_or_null("SubmitButton")
+					if button:
+						button.queue_free()
+					# Remove existing scroll container if present
+					var scroll = subchild.get_node_or_null("LeaderboardScroll")
+					if scroll:
+						scroll.queue_free()
 					break
 			break
 
@@ -620,10 +631,21 @@ func _show_leaderboard() -> void:
 	LeaderboardManager._load_leaderboard()
 	await LeaderboardManager.leaderboard_loaded
 
-	# Display leaderboard
+	# Display leaderboard in a scrollable container
 	var leaderboard = LeaderboardManager.get_leaderboard()
-	var text = ""
 
+	# Create ScrollContainer for leaderboard
+	var scroll_container = ScrollContainer.new()
+	scroll_container.name = "LeaderboardScroll"
+	scroll_container.custom_minimum_size = Vector2(400, 300)
+	scroll_container.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+
+	# Create label for leaderboard entries
+	var leaderboard_label = Label.new()
+	leaderboard_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	leaderboard_label.add_theme_font_size_override("font_size", 20)
+
+	var text = ""
 	for i in range(leaderboard.size()):
 		var entry = leaderboard[i]
 		var rank = i + 1
@@ -633,10 +655,55 @@ func _show_leaderboard() -> void:
 	if leaderboard.is_empty():
 		text = "No scores yet!\nBe the first!"
 
-	score_label.text = text
+	leaderboard_label.text = text
+	scroll_container.add_child(leaderboard_label)
 
-	# Show play again button
-	_show_play_again_button()
+	# Add scroll container to UI
+	for child in ui_layer.get_children():
+		if child is CenterContainer:
+			for subchild in child.get_children():
+				if subchild is VBoxContainer:
+					subchild.add_child(scroll_container)
+					break
+			break
+
+	# Clear score_label since we're using the scroll container now
+	score_label.text = ""
+
+	# Show buttons (with or without leaderboard button)
+	if show_leaderboard_button:
+		_show_play_again_button()
+	else:
+		_show_play_again_and_share_only()
+
+func _show_play_again_and_share_only() -> void:
+	# Create "Play Again" button
+	var play_again_button = Button.new()
+	play_again_button.name = "PlayAgainButton"
+	play_again_button.text = "PLAY AGAIN"
+	play_again_button.custom_minimum_size = Vector2(250, 60)
+	play_again_button.add_theme_font_size_override("font_size", 24)
+
+	# Create "Share" button - larger and more prominent
+	var share_button = Button.new()
+	share_button.text = "SHARE"
+	share_button.custom_minimum_size = Vector2(250, 60)
+	share_button.add_theme_font_size_override("font_size", 24)
+	share_button.name = "ShareButton"
+
+	# Position buttons below leaderboard
+	for child in ui_layer.get_children():
+		if child is CenterContainer:
+			for subchild in child.get_children():
+				if subchild is VBoxContainer:
+					subchild.add_child(play_again_button)
+					subchild.add_child(share_button)
+					break
+			break
+
+	# Connect button signals
+	play_again_button.pressed.connect(_on_play_again_pressed)
+	share_button.pressed.connect(_on_share_pressed)
 
 func _on_play_again_pressed() -> void:
 	# Remove all UI buttons
