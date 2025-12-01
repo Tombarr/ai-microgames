@@ -1,0 +1,20 @@
+{
+  "title": "Whack-a-Mole",
+  "description": "The carnival classic! Moles pop up from holes - whack them before they hide! Miss one and it's game over.",
+  "tags": ["arcade", "whack-a-mole", "reflex", "classic", "carnival"],
+  "seo_keywords": [
+    "whack a mole game",
+    "mole game",
+    "reflex game",
+    "carnival game",
+    "tapping game",
+    "microgame"
+  ],
+  "difficulty": "Medium",
+  "genre": "Arcade / Reflex",
+  "playtime": "5 seconds per round",
+  "controls": "Tap / Click on moles",
+  "og_image": "assets/og_image.png",
+  "one_liner": "See mole. Whack mole. Don't miss.",
+  "tagline": "The fastest mallet in the west"
+}

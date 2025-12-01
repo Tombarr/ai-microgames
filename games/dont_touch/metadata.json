@@ -1,0 +1,20 @@
+{
+  "title": "Don't Touch!",
+  "description": "Resist the urge! Tempting buttons beg to be pressed, but touching any of them means instant failure. Can you resist for 5 seconds?",
+  "tags": ["reflex", "willpower", "funny", "reverse-psychology", "arcade"],
+  "seo_keywords": [
+    "dont touch game",
+    "willpower game",
+    "resist game",
+    "button game",
+    "5 second challenge",
+    "microgame"
+  ],
+  "difficulty": "Easy",
+  "genre": "Arcade / Willpower",
+  "playtime": "5 seconds per round",
+  "controls": "Mouse/Touch (Don't use them!)",
+  "og_image": "assets/og_image.png",
+  "one_liner": "The buttons want you to click. Don't.",
+  "tagline": "Your willpower vs. temptation"
+}

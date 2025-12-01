@@ -1,0 +1,20 @@
+{
+  "title": "Infinite Jump",
+  "description": "A Mario-style endless runner! Jump over pipes and goombas to survive for 5 seconds. Snappy physics and fast action.",
+  "tags": ["platformer", "endless-runner", "mario-style", "jump", "arcade"],
+  "seo_keywords": [
+    "endless runner game",
+    "jump game",
+    "platformer game",
+    "mario style game",
+    "obstacle game",
+    "microgame"
+  ],
+  "difficulty": "Medium",
+  "genre": "Platformer / Endless Runner",
+  "playtime": "5 seconds per round",
+  "controls": "Tap / Click / Space to Jump",
+  "og_image": "assets/og_image.png",
+  "one_liner": "Jump. Survive. Repeat.",
+  "tagline": "5 seconds of pure platforming panic"
+}
