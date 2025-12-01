@@ -562,31 +562,39 @@ func _show_play_again_button() -> void:
 	var play_again_button = Button.new()
 	play_again_button.name = "PlayAgainButton"
 	play_again_button.text = "PLAY AGAIN"
-	play_again_button.custom_minimum_size = Vector2(250, 60)
-	play_again_button.add_theme_font_size_override("font_size", 24)
+	play_again_button.custom_minimum_size = Vector2(200, 60)
+	play_again_button.add_theme_font_size_override("font_size", 20)
+	play_again_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	# Add "View Leaderboard" button
 	var leaderboard_button = Button.new()
 	leaderboard_button.name = "LeaderboardButton"
 	leaderboard_button.text = "LEADERBOARD"
-	leaderboard_button.custom_minimum_size = Vector2(250, 60)
+	leaderboard_button.custom_minimum_size = Vector2(400, 60)
 	leaderboard_button.add_theme_font_size_override("font_size", 24)
 
-	# Create "Share" button - larger and more prominent
+	# Create "Share" button
 	var share_button = Button.new()
 	share_button.text = "SHARE"
-	share_button.custom_minimum_size = Vector2(250, 60)
-	share_button.add_theme_font_size_override("font_size", 24)
+	share_button.custom_minimum_size = Vector2(200, 60)
+	share_button.add_theme_font_size_override("font_size", 20)
 	share_button.name = "ShareButton"
+	share_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
-	# Position buttons below score (play again first for visibility)
+	# Create HBoxContainer for Play Again and Share buttons (side by side)
+	var hbox = HBoxContainer.new()
+	hbox.name = "ButtonRow"
+	hbox.add_theme_constant_override("separation", 10)
+	hbox.add_child(play_again_button)
+	hbox.add_child(share_button)
+
+	# Position buttons below score
 	for child in ui_layer.get_children():
 		if child is CenterContainer:
 			for subchild in child.get_children():
 				if subchild is VBoxContainer:
-					subchild.add_child(play_again_button)
+					subchild.add_child(hbox)
 					subchild.add_child(leaderboard_button)
-					subchild.add_child(share_button)
 					break
 			break
 
@@ -604,7 +612,11 @@ func _show_leaderboard(show_leaderboard_button: bool = true) -> void:
 		if child is CenterContainer:
 			for subchild in child.get_children():
 				if subchild is VBoxContainer:
-					# Remove buttons
+					# Remove button row container if present
+					var button_row = subchild.get_node_or_null("ButtonRow")
+					if button_row:
+						button_row.queue_free()
+					# Remove individual buttons
 					var button = subchild.get_node_or_null("PlayAgainButton")
 					if button:
 						button.queue_free()
@@ -681,23 +693,31 @@ func _show_play_again_and_share_only() -> void:
 	var play_again_button = Button.new()
 	play_again_button.name = "PlayAgainButton"
 	play_again_button.text = "PLAY AGAIN"
-	play_again_button.custom_minimum_size = Vector2(250, 60)
-	play_again_button.add_theme_font_size_override("font_size", 24)
+	play_again_button.custom_minimum_size = Vector2(200, 60)
+	play_again_button.add_theme_font_size_override("font_size", 20)
+	play_again_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
-	# Create "Share" button - larger and more prominent
+	# Create "Share" button
 	var share_button = Button.new()
 	share_button.text = "SHARE"
-	share_button.custom_minimum_size = Vector2(250, 60)
-	share_button.add_theme_font_size_override("font_size", 24)
+	share_button.custom_minimum_size = Vector2(200, 60)
+	share_button.add_theme_font_size_override("font_size", 20)
 	share_button.name = "ShareButton"
+	share_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	# Create HBoxContainer for buttons side by side
+	var hbox = HBoxContainer.new()
+	hbox.name = "ButtonRow"
+	hbox.add_theme_constant_override("separation", 10)
+	hbox.add_child(play_again_button)
+	hbox.add_child(share_button)
 
 	# Position buttons below leaderboard
 	for child in ui_layer.get_children():
 		if child is CenterContainer:
 			for subchild in child.get_children():
 				if subchild is VBoxContainer:
-					subchild.add_child(play_again_button)
-					subchild.add_child(share_button)
+					subchild.add_child(hbox)
 					break
 			break
 
