@@ -4,6 +4,11 @@ env:
   GODOT_VERSION: 4.5.1
   PROJECT_PATH: .
   EXPORT_NAME: MicroGamez
+  # Page generation settings
+  BASE_URL: https://tombarr.github.io/ai-microgames
+  BUILD_DIR: builds/web
+  GAMES_DIR: games
+  SITE_NAME: Microgames
 
 on:
   push:
@@ -40,7 +45,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          apt-get update && apt-get install -y npm libfontconfig1
+          apt-get update && apt-get install -y npm libfontconfig1 python3
           npm install -g html-minifier-terser clean-css-cli terser
 
       - name: Setup Export Templates
@@ -53,12 +58,18 @@ jobs:
           mkdir -p builds/web
           godot --headless --path ${{ env.PROJECT_PATH }} --export-release "Web" builds/web/index.html
 
+      - name: Generate game pages
+        run: python3 scripts/generate_game_pages.py
+
       - name: Minify assets
         run: |
           # Run HTML, CSS, JS minification in parallel
-          (for f in builds/web/*.html; do
-            html-minifier-terser --collapse-whitespace --remove-comments --minify-css true --minify-js true "$f" -o "$f"
-          done) &
+          # Include game subdirectory HTML files
+          (find builds/web -name "*.html" -exec sh -c '
+            for f; do
+              html-minifier-terser --collapse-whitespace --remove-comments --minify-css true --minify-js true "$f" -o "$f"
+            done
+          ' _ {} +) &
           (for f in builds/web/*.css; do
             [ -f "$f" ] && cleancss -o "$f" "$f"
           done) &

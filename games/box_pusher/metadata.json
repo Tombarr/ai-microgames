@@ -1,0 +1,20 @@
+{
+  "title": "Box Pusher",
+  "description": "A Sokoban-style puzzle where you push boxes onto targets in just 5 seconds. Plan your moves carefully!",
+  "tags": ["puzzle", "sokoban", "strategy", "grid-based", "logic"],
+  "seo_keywords": [
+    "sokoban game",
+    "box pushing puzzle",
+    "grid puzzle game",
+    "5 second puzzle",
+    "logic puzzle",
+    "microgame"
+  ],
+  "difficulty": "Medium",
+  "genre": "Puzzle",
+  "playtime": "5 seconds per round",
+  "controls": "Arrow Keys / WASD",
+  "og_image": "assets/og_image.png",
+  "one_liner": "Push the box. Hit the target. Beat the clock.",
+  "tagline": "Sokoban meets speed chess"
+}

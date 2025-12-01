@@ -1,0 +1,20 @@
+{
+  "title": "Tap Target",
+  "description": "A simple but addictive target-tapping game! Hit the bouncing red target before time runs out.",
+  "tags": ["arcade", "tapping", "target", "simple", "reflex"],
+  "seo_keywords": [
+    "tap game",
+    "target game",
+    "clicking game",
+    "reflex game",
+    "simple game",
+    "microgame"
+  ],
+  "difficulty": "Easy",
+  "genre": "Arcade",
+  "playtime": "5 seconds per round",
+  "controls": "Tap / Click",
+  "og_image": "assets/og_image.png",
+  "one_liner": "See target. Tap target. Win.",
+  "tagline": "The simplest game that's still somehow hard"
+}

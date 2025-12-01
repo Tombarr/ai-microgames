@@ -1,0 +1,20 @@
+{
+  "title": "Flappy Bird",
+  "description": "The classic one-tap flying game! Navigate through pipes by tapping to flap. Pass 3 pipes in 5 seconds to win.",
+  "tags": ["arcade", "flying", "one-tap", "classic", "reflex"],
+  "seo_keywords": [
+    "flappy bird game",
+    "flying game",
+    "tap game",
+    "pipe game",
+    "arcade game",
+    "microgame"
+  ],
+  "difficulty": "Hard",
+  "genre": "Arcade",
+  "playtime": "5 seconds per round",
+  "controls": "Tap / Click / Space",
+  "og_image": "assets/og_image.png",
+  "one_liner": "Tap to flap. Avoid the pipes. Don't crash.",
+  "tagline": "The bird that broke the internet, now in 5 seconds"
+}
