@@ -28,19 +28,124 @@ var next_pipe_x: float = 0.0
 var game_ended: bool = false
 var grace_period: float = 0.3  # Give player time to react before gravity
 
+# Bird visual class using _draw() for pixel-art style
+class BirdVisual extends Node2D:
+	var flap_angle: float = 0.0
+
+	func _draw():
+		# Main body (yellow/orange)
+		var body_color = Color(1.0, 0.85, 0.2)
+		var dark_color = Color(0.9, 0.65, 0.1)
+		var white = Color(1, 1, 1)
+		var black = Color(0, 0, 0)
+
+		# Body shadow
+		draw_circle(Vector2(2, 2), 20, dark_color)
+		# Main body
+		draw_circle(Vector2(0, 0), 20, body_color)
+
+		# Wing (flaps up and down)
+		var wing_offset = sin(flap_angle) * 4
+		draw_polygon([
+			Vector2(-8, -2 + wing_offset),
+			Vector2(-18, 8 + wing_offset),
+			Vector2(-5, 6 + wing_offset)
+		], [dark_color])
+
+		# Eye white
+		draw_circle(Vector2(8, -6), 10, white)
+		# Pupil
+		draw_circle(Vector2(11, -6), 5, black)
+		# Eye shine
+		draw_circle(Vector2(9, -8), 2, white)
+
+		# Beak (orange)
+		var beak_color = Color(1.0, 0.5, 0.1)
+		draw_polygon([
+			Vector2(14, 0),
+			Vector2(28, 4),
+			Vector2(14, 8)
+		], [beak_color])
+
+		# Beak highlight
+		draw_polygon([
+			Vector2(14, 0),
+			Vector2(24, 2),
+			Vector2(14, 4)
+		], [Color(1.0, 0.7, 0.3)])
+
+# Pipe visual class
+class PipeVisual extends Node2D:
+	var is_top: bool = false
+	var pipe_height: float = 400.0
+
+	func _draw():
+		var stem_color = Color(0.0, 0.72, 0.0)
+		var highlight_color = Color(0.2, 0.85, 0.2)
+		var shadow_color = Color(0.0, 0.5, 0.0)
+		var rim_color = Color(0.0, 0.85, 0.0)
+
+		var width = 60.0
+		var rim_height = 26.0
+		var rim_extra = 8.0
+
+		if is_top:
+			# Pipe going up (rim at bottom)
+			# Main stem
+			draw_rect(Rect2(-width/2, -pipe_height, width, pipe_height - rim_height), stem_color)
+			# Highlight
+			draw_rect(Rect2(-width/2 + 4, -pipe_height, 10, pipe_height - rim_height), highlight_color)
+			# Shadow
+			draw_rect(Rect2(width/2 - 12, -pipe_height, 8, pipe_height - rim_height), shadow_color)
+
+			# Rim (at bottom of top pipe)
+			draw_rect(Rect2(-width/2 - rim_extra, -rim_height, width + rim_extra*2, rim_height), rim_color)
+			# Rim highlight
+			draw_rect(Rect2(-width/2 - rim_extra + 4, -rim_height, width - 8, 6), Color(0.3, 0.95, 0.3))
+			# Rim shadow
+			draw_rect(Rect2(-width/2 - rim_extra, -4, width + rim_extra*2, 4), shadow_color)
+		else:
+			# Pipe going down (rim at top)
+			# Rim first
+			draw_rect(Rect2(-width/2 - rim_extra, 0, width + rim_extra*2, rim_height), rim_color)
+			# Rim highlight
+			draw_rect(Rect2(-width/2 - rim_extra + 4, 0, width - 8, 6), Color(0.3, 0.95, 0.3))
+			# Rim shadow
+			draw_rect(Rect2(-width/2 - rim_extra, rim_height - 4, width + rim_extra*2, 4), shadow_color)
+
+			# Main stem
+			draw_rect(Rect2(-width/2, rim_height, width, pipe_height), stem_color)
+			# Highlight
+			draw_rect(Rect2(-width/2 + 4, rim_height, 10, pipe_height), highlight_color)
+			# Shadow
+			draw_rect(Rect2(width/2 - 12, rim_height, 8, pipe_height), shadow_color)
+
 func _ready():
 	instruction = "TAP!"
 	super._ready()
 
 	viewport_size = get_viewport_rect().size
 
+	# Create sky background
+	var bg = ColorRect.new()
+	bg.color = Color(0.4, 0.75, 0.95)  # Light blue sky
+	bg.size = viewport_size
+	bg.z_index = -10
+	add_child(bg)
+
+	# Add ground
+	_create_ground()
+
+	# Add clouds
+	_add_clouds()
+
 	# Create bird
 	bird = Area2D.new()
 	bird.position = Vector2(viewport_size.x * 0.15, viewport_size.y * 0.4)  # Start slightly higher
 	add_child(bird)
 
-	# Bird visual (yellow circle)
-	var bird_visual = _create_circle(BIRD_SIZE, Color.YELLOW)
+	# Bird visual using custom _draw() class
+	var bird_visual = BirdVisual.new()
 	bird.add_child(bird_visual)
 
 	# Bird collision
@@ -77,6 +182,59 @@ func _ready():
 	_spawn_pipe(bird.position.y)
 
 	print("Flappy Bird Started! Pass " + str(TARGET_SCORE) + " pipes!")
+
+func _create_ground():
+	var ground = Node2D.new()
+	ground.z_index = 10
+
+	var script = GDScript.new()
+	script.source_code = """
+extends Node2D
+
+func _draw():
+	# Ground base (brown)
+	draw_rect(Rect2(0, 600, 640, 40), Color(0.6, 0.4, 0.2))
+
+	# Grass on top
+	draw_rect(Rect2(0, 590, 640, 12), Color(0.3, 0.75, 0.25))
+
+	# Grass highlight
+	draw_rect(Rect2(0, 590, 640, 4), Color(0.4, 0.85, 0.35))
+
+	# Dirt texture lines
+	for i in range(5):
+		var y = 610 + i * 6
+		draw_line(Vector2(0, y), Vector2(640, y), Color(0.5, 0.3, 0.15), 1)
+"""
+	script.reload()
+	ground.set_script(script)
+	add_child(ground)
+
+func _add_clouds():
+	for i in range(3):
+		var cloud = Node2D.new()
+		cloud.position = Vector2(100 + i * 200, 80 + randf_range(-30, 30))
+		cloud.z_index = -5
+
+		var script = GDScript.new()
+		script.source_code = """
+extends Node2D
+
+func _draw():
+	var cloud_color = Color(1.0, 1.0, 1.0, 0.95)
+	var shadow_color = Color(0.9, 0.95, 1.0, 0.8)
+	# Cloud shadow
+	draw_circle(Vector2(3, 5), 25, shadow_color)
+	draw_circle(Vector2(-18, 8), 18, shadow_color)
+	draw_circle(Vector2(23, 8), 20, shadow_color)
+	# Cloud puffs
+	draw_circle(Vector2(0, 0), 25, cloud_color)
+	draw_circle(Vector2(-20, 5), 18, cloud_color)
+	draw_circle(Vector2(22, 5), 20, cloud_color)
+"""
+		script.reload()
+		cloud.set_script(script)
+		add_child(cloud)
 
 func _process(delta):
 	time_elapsed += delta
@@ -194,29 +352,12 @@ func _create_pipe_segment(y_pos: float, is_top: bool) -> Area2D:
 	var pipe_area = Area2D.new()
 	pipe_area.position.y = y_pos
 
-	# Visual
-	var height = viewport_size.y if is_top else viewport_size.y
-	var visual = ColorRect.new()
-	visual.color = Color.GREEN
-	visual.size = Vector2(PIPE_WIDTH, height)
-
-	if is_top:
-		visual.position = Vector2(-PIPE_WIDTH / 2, -height)
-	else:
-		visual.position = Vector2(-PIPE_WIDTH / 2, 0)
-
-	visual.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Use custom PipeVisual class for better graphics
+	var height = viewport_size.y
+	var visual = PipeVisual.new()
+	visual.is_top = is_top
+	visual.pipe_height = height
 	pipe_area.add_child(visual)
-
-	# Border
-	var border = ReferenceRect.new()
-	border.editor_only = false
-	border.border_color = Color.DARK_GREEN
-	border.border_width = 3.0
-	border.size = visual.size
-	border.position = visual.position
-	border.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	pipe_area.add_child(border)
 
 	# Collision
 	var collision = CollisionShape2D.new()
@@ -232,24 +373,3 @@ func _create_pipe_segment(y_pos: float, is_top: bool) -> Area2D:
 	pipe_area.add_child(collision)
 
 	return pipe_area
-
-func _create_circle(radius: float, color: Color) -> Node2D:
-	var circle = Node2D.new()
-
-	var grad_tex = GradientTexture2D.new()
-	grad_tex.width = int(radius * 2)
-	grad_tex.height = int(radius * 2)
-	grad_tex.fill = GradientTexture2D.FILL_RADIAL
-	grad_tex.fill_from = Vector2(0.5, 0.5)
-	grad_tex.fill_to = Vector2(0.5, 0.0)
-
-	var grad = Gradient.new()
-	grad.colors = [color, color, Color(color.r, color.g, color.b, 0.0)]
-	grad.offsets = [0.0, 0.9, 1.0]
-	grad_tex.gradient = grad
-
-	var sprite = Sprite2D.new()
-	sprite.texture = grad_tex
-	circle.add_child(sprite)
-
-	return circle

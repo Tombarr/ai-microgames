@@ -163,13 +163,17 @@ Director auto-discovers games with `main.tscn` in `games/` folder. Just run the 
 
 Reference implementations:
 
-- `games/micro_sokoban/` - Grid-based puzzle with scene nodes
+- `games/box_pusher/` - Grid-based Sokoban puzzle (**STYLE_GUIDE_GRID_PUZZLE.md**)
+- `games/infinite_jump2/` - Mario-style infinite runner (**STYLE_GUIDE_PLATFORMER.md**)
 - `games/money_grabber/` - Collection game with programmatic spawning
 - `games/sample_ai_game/` - Minimal tap-target template
 
 ## Documentation
 
 - **GAME_REQUIREMENTS.md** - Succinct game spec for AI agents
+- **GAME_CATEGORIES.md** - All games organized by style/genre
 - **ARCHITECTURE.md** - System design and generation pipeline
 - **VISUAL_STYLE_GUIDE.md** - Art direction
+- **STYLE_GUIDE_GRID_PUZZLE.md** - Grid-based puzzle patterns (box_pusher style)
+- **STYLE_GUIDE_PLATFORMER.md** - Platformer & runner patterns (infinite_jump2 style)
 - **README.md** - Project overview

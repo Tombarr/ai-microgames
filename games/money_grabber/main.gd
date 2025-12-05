@@ -12,11 +12,11 @@ const SFX_COLLECT_LOW = preload("res://games/money_grabber/assets/sfx_collect_lo
 const SFX_COLLECT_MID = preload("res://games/money_grabber/assets/sfx_collect_mid.wav")
 const SFX_COLLECT_HIGH = preload("res://games/money_grabber/assets/sfx_collect_high.wav")
 
-# Ruby Types configuration
+# Ruby Types configuration (now with highlight and shadow colors)
 const RUBY_TYPES = [
-	{ "name": "green", "value": 1, "color": Color.GREEN, "weight": 60, "base_speed": 400.0 },
-	{ "name": "blue", "value": 5, "color": Color.BLUE, "weight": 30, "base_speed": 600.0 },
-	{ "name": "red", "value": 20, "color": Color.RED, "weight": 10, "base_speed": 900.0 }
+	{ "name": "green", "value": 1, "color": Color(0.2, 0.85, 0.3), "highlight": Color(0.5, 1.0, 0.6), "shadow": Color(0.1, 0.5, 0.15), "weight": 60, "base_speed": 400.0 },
+	{ "name": "blue", "value": 5, "color": Color(0.3, 0.5, 0.95), "highlight": Color(0.6, 0.75, 1.0), "shadow": Color(0.15, 0.25, 0.6), "weight": 30, "base_speed": 600.0 },
+	{ "name": "red", "value": 20, "color": Color(0.95, 0.2, 0.2), "highlight": Color(1.0, 0.6, 0.6), "shadow": Color(0.6, 0.1, 0.1), "weight": 10, "base_speed": 900.0 }
 ]
 
 # State
@@ -32,11 +32,101 @@ const GAME_DURATION: float = 5.0
 # UI
 var score_label: Label
 
+# Hand visual class using _draw()
+class HandVisual extends Node2D:
+	func _draw():
+		var skin_color = Color(0.95, 0.8, 0.65)
+		var shadow_color = Color(0.85, 0.65, 0.5)
+		var outline_color = Color(0.6, 0.4, 0.3)
+
+		# Palm (main body)
+		draw_rect(Rect2(-25, -15, 50, 45), skin_color)
+		# Palm shadow
+		draw_rect(Rect2(-25, 20, 50, 10), shadow_color)
+		# Palm outline
+		draw_rect(Rect2(-27, -17, 54, 4), outline_color)
+		draw_rect(Rect2(-27, 28, 54, 4), outline_color)
+		draw_rect(Rect2(-27, -17, 4, 49), outline_color)
+		draw_rect(Rect2(23, -17, 4, 49), outline_color)
+
+		# Fingers
+		var finger_positions = [-20, -7, 6, 19]
+		for i in range(4):
+			var x = finger_positions[i]
+			# Finger
+			draw_rect(Rect2(x, -40, 12, 28), skin_color)
+			# Finger highlight
+			draw_rect(Rect2(x + 2, -40, 4, 24), Color(1.0, 0.9, 0.8))
+			# Finger tip (rounded)
+			draw_circle(Vector2(x + 6, -40), 6, skin_color)
+			draw_circle(Vector2(x + 4, -42), 3, Color(1.0, 0.9, 0.8))
+
+		# Thumb
+		draw_rect(Rect2(-35, -5, 14, 25), skin_color)
+		draw_circle(Vector2(-28, -5), 7, skin_color)
+		draw_rect(Rect2(-33, -3, 4, 20), Color(1.0, 0.9, 0.8))
+
+# Gem/Ruby visual class using _draw()
+class GemVisual extends Node2D:
+	var gem_color: Color = Color.GREEN
+	var highlight_color: Color = Color(0.5, 1.0, 0.5)
+	var shadow_color: Color = Color(0.0, 0.5, 0.0)
+	var gem_value: int = 1
+
+	func _draw():
+		# Diamond/gem shape
+		var points = [
+			Vector2(0, -18),      # Top
+			Vector2(14, -6),      # Top right
+			Vector2(14, 8),       # Bottom right
+			Vector2(0, 18),       # Bottom
+			Vector2(-14, 8),      # Bottom left
+			Vector2(-14, -6),     # Top left
+		]
+
+		# Shadow/outline
+		var shadow_points = []
+		for p in points:
+			shadow_points.append(p + Vector2(2, 2))
+		draw_polygon(shadow_points, [shadow_color])
+
+		# Main gem body
+		draw_polygon(points, [gem_color])
+
+		# Facet highlights (top facets)
+		draw_polygon([
+			Vector2(0, -18),
+			Vector2(14, -6),
+			Vector2(0, 0),
+			Vector2(-14, -6)
+		], [highlight_color])
+
+		# Inner shine
+		draw_polygon([
+			Vector2(-4, -10),
+			Vector2(4, -10),
+			Vector2(2, -4),
+			Vector2(-2, -4)
+		], [Color(1, 1, 1, 0.7)])
+
+		# Small sparkle
+		draw_circle(Vector2(-6, -8), 3, Color(1, 1, 1, 0.9))
+
+		# Value indicator (small dots for higher values)
+		if gem_value >= 5:
+			draw_circle(Vector2(0, 6), 3, Color(1, 1, 1, 0.6))
+		if gem_value >= 20:
+			draw_circle(Vector2(-5, 6), 3, Color(1, 1, 1, 0.6))
+			draw_circle(Vector2(5, 6), 3, Color(1, 1, 1, 0.6))
+
 func _ready():
 	instruction = "GRAB 30!"
 	super._ready()
 
 	viewport_size = get_viewport_rect().size
+
+	# Create gradient background (treasure cave)
+	_create_background()
 
 	# Create score display
 	score_label = Label.new()
@@ -49,8 +139,8 @@ func _ready():
 	score_label.text = "0 / 30"
 	add_child(score_label)
 
-	# Create Hand
-	hand = _create_area(Vector2(viewport_size.x / 2, viewport_size.y - HAND_Y_OFFSET), 30.0, Color("ffccaa"), Vector2(60, 60))
+	# Create Hand with custom visual
+	hand = _create_hand(Vector2(viewport_size.x / 2, viewport_size.y - HAND_Y_OFFSET))
 
 	# Setup audio
 	var sfx_win = AudioStreamPlayer.new()
@@ -82,6 +172,70 @@ func _ready():
 	current_spawn_interval = 0.4 / speed_multiplier
 
 	print("Money Grabber Started! Collect " + str(TARGET_SCORE) + " value!")
+
+func _create_background():
+	# Dark cave background
+	var bg = ColorRect.new()
+	bg.color = Color(0.15, 0.1, 0.2)
+	bg.size = viewport_size
+	bg.z_index = -10
+	add_child(bg)
+
+	# Add some sparkle/treasure particles in background
+	var sparkle_node = Node2D.new()
+	sparkle_node.z_index = -5
+
+	var script = GDScript.new()
+	script.source_code = """
+extends Node2D
+
+func _draw():
+	# Sparkle stars in background
+	var sparkle_color = Color(1, 1, 0.8, 0.3)
+	for i in range(20):
+		var x = hash(i * 123) % 640
+		var y = hash(i * 456) % 400
+		var size = (hash(i * 789) % 3) + 1
+		draw_circle(Vector2(x, y), size, sparkle_color)
+
+	# Treasure chest at bottom
+	var chest_color = Color(0.55, 0.35, 0.15)
+	var gold_color = Color(0.95, 0.8, 0.2)
+
+	# Chest body
+	draw_rect(Rect2(250, 560, 140, 60), chest_color)
+	draw_rect(Rect2(245, 550, 150, 15), Color(0.65, 0.45, 0.2))
+
+	# Gold peeking out
+	draw_circle(Vector2(280, 555), 12, gold_color)
+	draw_circle(Vector2(310, 550), 10, gold_color)
+	draw_circle(Vector2(340, 555), 14, gold_color)
+	draw_circle(Vector2(365, 552), 11, gold_color)
+
+	# Chest lock
+	draw_rect(Rect2(310, 565, 20, 25), Color(0.7, 0.6, 0.1))
+"""
+	script.reload()
+	sparkle_node.set_script(script)
+	add_child(sparkle_node)
+
+func _create_hand(pos: Vector2) -> Area2D:
+	var area = Area2D.new()
+	area.position = pos
+	add_child(area)
+
+	# Add collision shape
+	var collision = CollisionShape2D.new()
+	var shape = CircleShape2D.new()
+	shape.radius = 35.0
+	collision.shape = shape
+	area.add_child(collision)
+
+	# Add visual using custom class
+	var visual = HandVisual.new()
+	area.add_child(visual)
+
+	return area
 
 func _process(delta):
 	time_elapsed += delta
@@ -150,14 +304,36 @@ func _spawn_ruby() -> void:
 	var x_pos = randf_range(SPAWN_MARGIN, viewport_size.x - SPAWN_MARGIN)
 	var start_pos = Vector2(x_pos, -50)
 
-	# Create ruby
-	var ruby = _create_area(start_pos, 25.0, type.color, Vector2(30, 30))
+	# Create ruby with custom visual
+	var ruby = _create_gem(start_pos, type)
 
 	# Store data on the node
 	ruby.set_meta("value", type.value)
 	ruby.set_meta("speed", type.base_speed)
 
 	rubies.append(ruby)
+
+func _create_gem(pos: Vector2, gem_type: Dictionary) -> Area2D:
+	var area = Area2D.new()
+	area.position = pos
+	add_child(area)
+
+	# Add collision shape
+	var collision = CollisionShape2D.new()
+	var shape = CircleShape2D.new()
+	shape.radius = 18.0
+	collision.shape = shape
+	area.add_child(collision)
+
+	# Add visual using custom GemVisual class
+	var visual = GemVisual.new()
+	visual.gem_color = gem_type.color
+	visual.highlight_color = gem_type.highlight
+	visual.shadow_color = gem_type.shadow
+	visual.gem_value = gem_type.value
+	area.add_child(visual)
+
+	return area
 
 func _collect_ruby(ruby: Area2D) -> void:
 	var value = ruby.get_meta("value")
@@ -184,34 +360,3 @@ func _collect_ruby(ruby: Area2D) -> void:
 		$sfx_win.play()
 		end_game()
 
-func _create_area(pos: Vector2, radius: float, color: Color, size: Vector2) -> Area2D:
-	var area = Area2D.new()
-	area.position = pos
-	add_child(area)
-
-	# Add collision shape
-	var collision = CollisionShape2D.new()
-	var shape = CircleShape2D.new()
-	shape.radius = radius
-	collision.shape = shape
-	area.add_child(collision)
-
-	# Add visual (ColorRect)
-	var rect = ColorRect.new()
-	rect.color = color
-	rect.size = size
-	rect.position = -size / 2
-	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	area.add_child(rect)
-
-	# Add border
-	var border = ReferenceRect.new()
-	border.editor_only = false
-	border.border_color = Color.WHITE
-	border.border_width = 2.0
-	border.size = size
-	border.position = -size / 2
-	border.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	area.add_child(border)
-
-	return area

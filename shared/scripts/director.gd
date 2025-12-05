@@ -7,17 +7,23 @@ extends Node
 @export var initial_speed: float = 1.0
 
 # Static list of games for web export compatibility (DirAccess doesn't work in browser)
+# See GAME_CATEGORIES.md for detailed game organization
 const GAME_LIST: Array[String] = [
-	"balloon_popper",
-	"box_pusher",
-	"flappy_bird",
-	"geo_stacker",
-	"infinite_jump2",
-	"loop_connect",
-	"minesweeper",
-	"money_grabber",
-	"space_invaders",
-	"whack_a_mole",
+	# Grid-Based Puzzles (turn-based, strategic)
+	"box_pusher",      # Sokoban - STYLE_GUIDE_GRID_PUZZLE.md
+	"geo_stacker",     # Tetris-style
+	"loop_connect",    # Path puzzle
+	"minesweeper",     # Classic sweep
+
+	# Platformers & Runners (physics-based, reflex)
+	"infinite_jump2",  # Mario runner - STYLE_GUIDE_PLATFORMER.md
+	"flappy_bird",     # Vertical scroller
+
+	# Action & Timing (tap targets, real-time)
+	"balloon_popper",  # Single target
+	"money_grabber",   # Collection game
+	"space_invaders",  # Shooter
+	"whack_a_mole",    # Timing game
 ]
 @export var speed_increment: float = 0.2
 @export var max_speed: float = 5.0

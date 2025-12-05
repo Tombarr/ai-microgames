@@ -31,13 +31,17 @@ func _load_leaderboard() -> void:
 	is_loading = true
 	print("Fetching leaderboard from Supabase...")
 
-	var url = SUPABASE_URL + "/rest/v1/" + TABLE_NAME + "?select=*&order=score.desc&limit=" + str(MAX_ENTRIES)
+	# Add cache-busting parameter to bypass service worker cached gzip responses
+	var cache_bust = str(Time.get_unix_time_from_system())
+	var url = SUPABASE_URL + "/rest/v1/" + TABLE_NAME + "?select=*&order=score.desc&limit=" + str(MAX_ENTRIES) + "&_cb=" + cache_bust
 
 	var headers = [
 		"apikey: " + SUPABASE_KEY,
 		"Authorization: Bearer " + SUPABASE_KEY,
 		"Content-Type: application/json",
-		"Accept-Encoding: identity"  # Request uncompressed response for web builds
+		"Accept-Encoding: identity",  # Request uncompressed response for web builds
+		"Cache-Control: no-cache, no-store, must-revalidate",  # Prevent caching
+		"Pragma: no-cache"  # HTTP/1.0 compatibility
 	]
 
 	var error = http_request.request(url, headers, HTTPClient.METHOD_GET)
@@ -132,14 +136,18 @@ func add_entry(player_name: String, score: int) -> void:
 		"created_at": timestamp
 	}
 
-	var url = SUPABASE_URL + "/rest/v1/" + TABLE_NAME
+	# Add cache-busting parameter to bypass service worker
+	var cache_bust = str(Time.get_unix_time_from_system())
+	var url = SUPABASE_URL + "/rest/v1/" + TABLE_NAME + "?_cb=" + cache_bust
 
 	var headers = [
 		"apikey: " + SUPABASE_KEY,
 		"Authorization: Bearer " + SUPABASE_KEY,
 		"Content-Type: application/json",
 		"Prefer: return=representation",
-		"Accept-Encoding: identity"  # Request uncompressed response for web builds
+		"Accept-Encoding: identity",  # Request uncompressed response for web builds
+		"Cache-Control: no-cache, no-store, must-revalidate",
+		"Pragma: no-cache"
 	]
 
 	var body = JSON.stringify(new_entry)
