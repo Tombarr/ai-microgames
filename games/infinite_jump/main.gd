@@ -27,8 +27,9 @@ var goomba_scene = preload("res://games/infinite_jump/goomba.tscn")
 
 # Game state
 var time_elapsed: float = 0.0
-var game_ended: bool = false
-const GAME_DURATION: float = 5.0
+var outcome_determined: bool = false  # Win/lose decided, but game keeps running
+var game_ended: bool = false  # Only true when beats finish
+var hit_obstacle: bool = false  # True when player collides - freezes obstacles
 
 # ========================================
 # PHASE 1: CRITICAL Y-AXIS ALIGNMENT
@@ -92,16 +93,20 @@ func _ready():
 	if ground_visual:
 		ground_visual.queue_redraw()
 
-	# Start spawning obstacles
+	# Spawn first obstacle immediately so player has something to dodge
+	_spawn_obstacle()
+
+	# Start spawning more obstacles
 	spawn_timer.start()
 
 func _physics_process(delta):
-	if game_ended:
+	# Freeze everything when hit obstacle or game ended
+	if game_ended or hit_obstacle:
 		return
-	
+
 	# Handle player input for ducking
 	handle_player_input()
-	
+
 	# FIX: Apply faster gravity when not on floor
 	if not player.is_on_floor():
 		player.velocity.y += GRAVITY * delta
@@ -112,34 +117,41 @@ func _physics_process(delta):
 func _process(delta):
 	time_elapsed += delta * speed_multiplier
 
-	# Check timeout - always let full time run for Director
+	# ========================================
+	# BEAT-BASED TIMING: Game runs until beats finish
+	# ========================================
+	# Check if beats are complete - then end game for Director
 	if time_elapsed >= time_limit:
 		if not game_ended:
-			# Timeout = WIN! Player survived the full time without getting hit
-			add_score(max(100, obstacles_dodged * 10))  # At least 100 points for surviving
-			$sfx_win.play()
+			# If outcome wasn't determined yet (survived!), it's a win
+			if not outcome_determined:
+				add_score(max(100, obstacles_dodged * 10))
+				$sfx_win.play()
+				outcome_determined = true
 			end_game()
 			game_ended = true
 		return
-	
-	# Stop game logic after win/lose
+
+	# After game_ended, stop all processing
 	if game_ended:
 		return
-	
-	# Move obstacles at increased speed
+
+	# Move obstacles (continues even after outcome determined for visual continuity)
 	move_obstacles(delta)
-	
-	# Check collisions with proper hitbox alignment
-	check_collisions()
-	
-	# Count obstacles that passed the player
-	for obstacle in obstacle_container.get_children():
-		if obstacle.position.x < player.position.x - 50 and not obstacle.has_meta("counted"):
-			obstacle.set_meta("counted", true)
-			obstacles_dodged += 1
+
+	# Only check collisions if outcome not yet determined
+	if not outcome_determined:
+		check_collisions()
+
+		# Count obstacles that passed the player
+		for obstacle in obstacle_container.get_children():
+			if obstacle.position.x < player.position.x - 50 and not obstacle.has_meta("counted"):
+				obstacle.set_meta("counted", true)
+				obstacles_dodged += 1
 
 func _input(event):
-	if game_ended:
+	# Freeze input when hit or game ended
+	if game_ended or hit_obstacle:
 		return
 
 	# Touch/Click to jump
@@ -165,18 +177,22 @@ func handle_player_input():
 		player.scale.y = 1.0  # Normal height
 
 func move_obstacles(delta):
+	# FREEZE obstacles when player hit something
+	if hit_obstacle:
+		return
+
 	# FIX: Increased scroll speed with speed_multiplier from Director
 	var scroll_speed = BASE_SCROLL_SPEED * speed_multiplier
-	
+
 	for obstacle in obstacle_container.get_children():
 		obstacle.position.x -= scroll_speed * delta
-		
+
 		# Remove off-screen obstacles to save memory
 		if obstacle.position.x < -150:
 			obstacle.queue_free()
 
 func check_collisions():
-	if game_ended:
+	if outcome_determined or game_ended:
 		return
 
 	# Use Area2D's built-in collision detection for accuracy
@@ -185,60 +201,45 @@ func check_collisions():
 			var overlapping_bodies = obstacle.get_overlapping_bodies()
 			for body in overlapping_bodies:
 				if body == player:
-					# Collision detected - game over
+					# Collision detected - freeze everything!
 					$sfx_lose.play()
-					end_game()
-					game_ended = true
+					outcome_determined = true
+					hit_obstacle = true  # This freezes obstacles and player
+					# Score stays at 0 = lose
 					return
 
-func _on_spawn_timer_timeout():
-	if game_ended:
-		return
-	
+func _spawn_obstacle():
 	# ========================================
-	# FIX: Y-AXIS ALIGNMENT FOR ALL OBSTACLES
+	# SPAWN OBSTACLE WITH Y-AXIS ALIGNMENT
 	# ========================================
 	# All obstacles spawn with bottom edge touching FLOOR_Y
-	
+
 	var obstacle
 	var spawn_x = 700.0  # Spawn off-screen right
-	
+
 	if randf() > 0.5:
-		# ========================================
 		# SPAWN PIPE (fixed jumpable height)
-		# ========================================
 		obstacle = pipe_scene.instantiate()
-
-		# Pipe is now 80 pixels tall (matches collision and visual)
 		var pipe_height = 80.0
-
-		# Calculate Y position so BOTTOM of pipe touches floor
 		var pipe_y = FLOOR_Y - pipe_height
-
 		obstacle.position = Vector2(spawn_x, pipe_y)
-
-		print("Pipe spawned at Y: ", pipe_y, " (Height: ", pipe_height, ")")
 	else:
-		# ========================================
 		# SPAWN GOOMBA (mushroom enemy)
-		# ========================================
 		obstacle = goomba_scene.instantiate()
-		
-		# Get goomba collision dimensions
-		var goomba_height = 32.0  # Goomba sprite height
-		
-		# FIX: Calculate Y position so BOTTOM of goomba touches floor
+		var goomba_height = 32.0
 		var goomba_y = FLOOR_Y - goomba_height
-		
 		obstacle.position = Vector2(spawn_x, goomba_y)
-		
-		print("Goomba spawned at Y: ", goomba_y, " (Height: ", goomba_height, ")")
-	
+
 	obstacle_container.add_child(obstacle)
-	
-	# FIX: Faster spawn rate with speed_multiplier
-	# At higher speeds, obstacles spawn more frequently
-	# REDUCED: Halved spawn interval for tighter obstacle spacing
+
+func _on_spawn_timer_timeout():
+	# Stop spawning once outcome is determined or game ended
+	if outcome_determined or game_ended:
+		return
+
+	_spawn_obstacle()
+
+	# Faster spawn rate with speed_multiplier
 	var spawn_interval = randf_range(0.6, 1.0) / speed_multiplier
 	spawn_timer.wait_time = spawn_interval
 	spawn_timer.start()

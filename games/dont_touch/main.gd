@@ -68,6 +68,11 @@ func _ready():
 	instruction = "DON'T TOUCH!"
 	super._ready()
 
+	# IMPORTANT: Add score at start (optimistic win)
+	# This ensures score is set before Director's timeout fires
+	# Score will be reset to 0 if player clicks a button (fail)
+	add_score(100)
+
 	# Create themed background
 	_create_background()
 
@@ -285,9 +290,11 @@ func _on_button_pressed(button: Button):
 		return
 
 	# Player failed - they clicked a button!
+	# Reset score to 0 (we added 100 optimistically in _ready())
+	current_score = 0
 	$sfx_button_press.play()
 	$sfx_lose.play()
-	end_game()  # Score stays at 0 = loss
+	end_game()  # Score is now 0 = loss
 	game_ended = true
 
 	# Stop all animations
@@ -308,9 +315,9 @@ func _process(delta):
 	time_elapsed += delta * speed_multiplier
 
 	# Check timeout - if player resisted all buttons, they win!
+	# (score was already added in _ready() - optimistic win pattern)
 	if time_elapsed >= time_limit:
 		if not game_ended:
-			add_score(100)  # Win!
 			$sfx_win.play()
 			end_game()
 			game_ended = true

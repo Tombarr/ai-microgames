@@ -508,16 +508,23 @@ func _on_game_timeout() -> void:
 	if not game_active:
 		return
 
-	print("Director: Game timed out! Player loses.")
+	# Get the game's actual score - some games win on timeout (e.g., dont_touch)
+	var final_score = 0
+	if is_instance_valid(current_game):
+		final_score = current_game.current_score
 
-	# Show explosion effect at countdown position
-	_show_explosion_effect()
+	if final_score > 0:
+		print("Director: Game timed out! Player wins with score: ", final_score)
+	else:
+		print("Director: Game timed out! Player loses.")
+		# Show explosion effect only on loss
+		_show_explosion_effect()
 
 	# Hide countdown
 	countdown_label.visible = false
 
-	# Timeout always means loss - call _on_game_over with score 0
-	_on_game_over(0)
+	# Use the game's actual score instead of hardcoding 0
+	_on_game_over(final_score)
 
 func _show_explosion_effect() -> void:
 	var viewport_size = get_viewport().get_visible_rect().size

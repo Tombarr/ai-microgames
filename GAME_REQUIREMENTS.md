@@ -68,14 +68,19 @@ velocity * speed_multiplier * delta
 velocity * delta * speed_multiplier
 ```
 
-### Win/Lose System
+### Win/Lose System (Beat-Based)
 
-- **Win**: Call `add_score(positive_value)` then `end_game()` - game ends immediately
-- **Lose**: Call `end_game()` with score still at 0 - game ends immediately
-- **After end_game()**: Stop all game logic, but let the full timer run out before Director transition
+Games must maintain the beat - don't end early!
+
+- **Outcome determined**: Set `outcome_determined = true` when win/lose is detected
+- **Game keeps running**: Player can still move, visuals continue until beats finish
+- **At time_limit**: Call `end_game()` only when beats complete
 - **No replay**: Games should not restart or loop - once ended, wait for Director
 - Director interprets: score > 0 = PASS, score == 0 = FAIL
-- Must call `end_game()` within time_limit (default 4 seconds / 8 beats)
+
+**Two-phase pattern:**
+1. `outcome_determined` - Win/lose decided, stop gameplay logic (spawning, collisions)
+2. `game_ended` - Set only when time_limit reached, call `end_game()`
 
 ### Instruction
 
@@ -107,13 +112,14 @@ func _input(event):
         _handle_drag(mouse_pos)
 ```
 
-## Example Template
+## Example Template (Beat-Based)
 
 ```gdscript
 extends Microgame
 
 var time_elapsed: float = 0.0
-var game_ended: bool = false
+var outcome_determined: bool = false  # Win/lose decided
+var game_ended: bool = false           # Beats finished
 
 func _ready():
     instruction = "TAP!"
@@ -127,28 +133,33 @@ func _ready():
 func _process(delta):
     time_elapsed += delta
 
-    # Check timeout - always let full time run for Director
+    # Only end game when beats finish
     if time_elapsed >= time_limit:
         if not game_ended:
-            end_game()  # Timeout = fail (score still 0)
+            if not outcome_determined:
+                # No outcome yet = timeout fail
+                outcome_determined = true
+            end_game()
             game_ended = true
         return
 
-    # Stop game logic after win/lose, but keep running until timeout
+    # After game_ended, stop all processing
     if game_ended:
         return
 
     # Apply speed_multiplier to all movement
     enemy.position += BASE_SPEED * speed_multiplier * delta
 
-    # Check win condition
-    if objective_complete:
-        add_score(100)  # Any positive value
-        end_game()      # Game ends immediately
-        game_ended = true  # Stop further game logic
+    # Only check win/lose if outcome not determined
+    if not outcome_determined:
+        if objective_complete:
+            add_score(100)
+            outcome_determined = true
+        elif fail_condition:
+            outcome_determined = true  # Score stays 0 = fail
 
 func _input(event):
-    # Ignore input after game ends
+    # Player can interact until beats finish (not just until outcome)
     if game_ended:
         return
 
