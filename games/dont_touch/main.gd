@@ -2,7 +2,7 @@ extends Microgame
 
 var time_elapsed: float = 0.0
 var game_ended: bool = false
-const GAME_DURATION: float = 5.0
+# Uses default 4 seconds (8 beats at 120 BPM) from Director
 
 # Button texts to entice clicking
 const BUTTON_TEXTS = [
@@ -305,10 +305,10 @@ func _process(delta):
 	if game_ended:
 		return
 
-	time_elapsed += delta
+	time_elapsed += delta * speed_multiplier
 
 	# Check timeout - if player resisted all buttons, they win!
-	if time_elapsed >= GAME_DURATION:
+	if time_elapsed >= time_limit:
 		if not game_ended:
 			add_score(100)  # Win!
 			$sfx_win.play()

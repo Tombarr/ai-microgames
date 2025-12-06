@@ -238,10 +238,10 @@ func _create_hand(pos: Vector2) -> Area2D:
 	return area
 
 func _process(delta):
-	time_elapsed += delta
+	time_elapsed += delta * speed_multiplier
 
 	# Check timeout
-	if time_elapsed >= GAME_DURATION:
+	if time_elapsed >= time_limit:
 		if game_active:
 			game_active = false
 			# Only win if reached target, otherwise lose

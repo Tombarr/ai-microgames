@@ -42,7 +42,7 @@ var grid = []  # 2D array
 
 **Best for**: Infinite runners, platformers, obstacle courses, jumping challenges, timing-based games
 
-**Reference Game**: [`infinite_jump2`](games/infinite_jump2/)
+**Reference Game**: [`infinite_jump`](games/infinite_jump/)
 
 **Key Features**:
 - Side-scrolling physics
@@ -270,7 +270,7 @@ games/[name]/
 - ✅ loop_connect (Path puzzle)
 
 ### Platformer Games
-- ✅ infinite_jump2 (Infinite runner)
+- ✅ infinite_jump (Infinite runner)
 - ✅ flappy_bird (Vertical scroller)
 - ⚠️ space_invaders (Shooter variation)
 

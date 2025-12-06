@@ -6,7 +6,7 @@ enum MoleState { HIDDEN, RISING, VISIBLE, HIDING, HIT }
 var game_ended: bool = false
 var time_elapsed: float = 0.0
 var moles_hit: int = 0
-const MOLES_TO_WIN: int = 5  # Must hit 5 moles to win
+const MOLES_TO_WIN: int = 3  # Must hit 3 moles to win
 
 # Color Palette (PICO-8 inspired with warmer grass)
 var COLOR_PALETTE = {
@@ -44,9 +44,15 @@ var mole_spawn_timer: float = 0.0
 var spawn_interval: float = 0.0
 
 func _ready():
-	instruction = "WHACK!"
+	instruction = "WHACK 3!"
 	super._ready()
-	
+
+	# Initialize hit sound
+	var sfx_hit = AudioStreamPlayer.new()
+	sfx_hit.name = "sfx_hit"
+	sfx_hit.stream = load("res://shared/assets/sfx_button_press.wav")
+	add_child(sfx_hit)
+
 	# Calculate spawn interval to ensure at least 5 moles spawn
 	# Need to spawn 5 moles within time_limit
 	# Each mole takes time to: rise (0.3s) + be visible (0.8-1.5s avg 1.15s) + hide (0.3s)
@@ -233,8 +239,8 @@ func _create_mole_grid():
 			moles.append(mole_data)
 
 func _process(delta):
-	time_elapsed += delta
-	
+	time_elapsed += delta * speed_multiplier
+
 	# Check for timeout (Director handles this, but we track for safety)
 	if time_elapsed >= time_limit:
 		if not game_ended:
@@ -251,8 +257,8 @@ func _process(delta):
 	if game_ended:
 		return
 	
-	# Update mole spawn timer
-	mole_spawn_timer += delta
+	# Update mole spawn timer (scale with speed so more moles spawn at higher speeds)
+	mole_spawn_timer += delta * speed_multiplier
 	if mole_spawn_timer >= spawn_interval:
 		mole_spawn_timer = 0.0
 		_spawn_random_mole()
@@ -360,6 +366,7 @@ func _hit_mole(mole: Dictionary):
 		mole.timer = 0.0
 		mole.was_hit = true
 		mole.mole_sprite.texture = mole_hit_texture
+		$sfx_hit.play()  # Play hit sound
 		add_score(10)  # Use Microgame's add_score method
 		moles_hit += 1
 		

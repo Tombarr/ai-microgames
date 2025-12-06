@@ -5,13 +5,25 @@ const SFX_WIN = preload("res://shared/assets/sfx_win.wav")
 const SFX_LOSE = preload("res://shared/assets/sfx_lose.wav")
 const SFX_HIT = preload("res://games/balloon_popper/assets/sfx_hit.wav")
 
-var target: Area2D
-var speed: float = 200.0
-var direction: Vector2
+# Balloon colors (main, highlight, shadow)
+const BALLOON_COLORS = [
+	{"main": Color(0.9, 0.1, 0.1), "highlight": Color(1.0, 0.5, 0.5), "shadow": Color(0.6, 0.0, 0.0)},  # Red
+	{"main": Color(0.1, 0.6, 0.9), "highlight": Color(0.5, 0.8, 1.0), "shadow": Color(0.0, 0.3, 0.6)},  # Blue
+	{"main": Color(0.1, 0.8, 0.3), "highlight": Color(0.5, 1.0, 0.6), "shadow": Color(0.0, 0.5, 0.1)},  # Green
+	{"main": Color(0.9, 0.7, 0.1), "highlight": Color(1.0, 0.9, 0.5), "shadow": Color(0.6, 0.4, 0.0)},  # Yellow
+	{"main": Color(0.8, 0.2, 0.8), "highlight": Color(1.0, 0.6, 1.0), "shadow": Color(0.5, 0.0, 0.5)},  # Purple
+	{"main": Color(0.9, 0.5, 0.2), "highlight": Color(1.0, 0.7, 0.5), "shadow": Color(0.6, 0.3, 0.0)},  # Orange
+]
+
+const NUM_BALLOONS: int = 3
+const BALLOONS_TO_POP: int = 3  # Pop all balloons to win
+var balloons: Array = []  # Array of dictionaries with balloon data
+var balloons_popped: int = 0
+
+var base_speed: float = 180.0
 var viewport_size: Vector2
 var time_elapsed: float = 0.0
 var game_ended: bool = false
-const GAME_DURATION: float = 5.0
 
 # Balloon visual class using _draw() for high-quality graphics
 class BalloonVisual extends Node2D:
@@ -20,19 +32,15 @@ class BalloonVisual extends Node2D:
 	var shadow_color: Color = Color(0.6, 0.0, 0.0)
 
 	func _draw():
-		# Balloon body (oval shape using multiple ellipses)
 		var center = Vector2(0, -10)
-		var width = 40.0
-		var height = 50.0
 
-		# Main balloon body (draw as overlapping circles for oval effect)
 		# Shadow side (right)
 		draw_circle(center + Vector2(8, 0), 32, shadow_color)
 		# Main body
 		draw_circle(center, 36, balloon_color)
 		# Highlight (top-left shine)
 		draw_circle(center + Vector2(-12, -12), 14, highlight_color)
-		draw_circle(center + Vector2(-8, -8), 8, Color(1.0, 0.8, 0.8))
+		draw_circle(center + Vector2(-8, -8), 8, Color(1.0, 0.9, 0.9, 0.8))
 
 		# Balloon knot (bottom)
 		var knot_y = 32
@@ -40,7 +48,7 @@ class BalloonVisual extends Node2D:
 			Vector2(-6, knot_y),
 			Vector2(0, knot_y + 10),
 			Vector2(6, knot_y)
-		], [Color(0.7, 0.0, 0.0)])
+		], [shadow_color])
 
 		# String
 		var string_color = Color(0.4, 0.3, 0.2)
@@ -49,7 +57,7 @@ class BalloonVisual extends Node2D:
 		draw_line(Vector2(2, knot_y + 50), Vector2(-2, knot_y + 70), string_color, 2.0)
 
 func _ready():
-	instruction = "POP!"
+	instruction = "POP ALL!"
 	super._ready()
 
 	viewport_size = get_viewport_rect().size
@@ -64,24 +72,9 @@ func _ready():
 	# Add some clouds for atmosphere
 	_add_clouds()
 
-	# Create target
-	target = Area2D.new()
-	target.position = viewport_size / 2
-	add_child(target)
-
-	# Add visual using custom _draw() class
-	var balloon_visual = BalloonVisual.new()
-	target.add_child(balloon_visual)
-
-	# Add collision shape
-	var collision = CollisionShape2D.new()
-	var shape = CircleShape2D.new()
-	shape.radius = 40.0
-	collision.shape = shape
-	target.add_child(collision)
-
-	# Random direction
-	direction = Vector2(randf_range(-1, 1), randf_range(-1, 1)).normalized()
+	# Create multiple balloons
+	for i in range(NUM_BALLOONS):
+		_create_balloon(i)
 
 	# Setup audio
 	var sfx_win = AudioStreamPlayer.new()
@@ -99,13 +92,45 @@ func _ready():
 	sfx_hit.stream = SFX_HIT
 	add_child(sfx_hit)
 
-	print("Balloon Popper Started: POP THE BALLOON!")
+func _create_balloon(index: int) -> void:
+	var color_data = BALLOON_COLORS[index % BALLOON_COLORS.size()]
+
+	var balloon_node = Area2D.new()
+	# Spread balloons across the screen
+	var start_x = 80 + (index % 3) * 200 + randf_range(-40, 40)
+	var start_y = 150 + (index / 3) * 200 + randf_range(-40, 40)
+	balloon_node.position = Vector2(start_x, start_y)
+	add_child(balloon_node)
+
+	# Add visual
+	var balloon_visual = BalloonVisual.new()
+	balloon_visual.balloon_color = color_data["main"]
+	balloon_visual.highlight_color = color_data["highlight"]
+	balloon_visual.shadow_color = color_data["shadow"]
+	balloon_node.add_child(balloon_visual)
+
+	# Add collision shape
+	var collision = CollisionShape2D.new()
+	var shape = CircleShape2D.new()
+	shape.radius = 40.0
+	collision.shape = shape
+	balloon_node.add_child(collision)
+
+	# Random direction with varied speeds
+	var direction = Vector2(randf_range(-1, 1), randf_range(-1, 1)).normalized()
+	var speed = base_speed + randf_range(-50, 50)
+
+	balloons.append({
+		"node": balloon_node,
+		"direction": direction,
+		"speed": speed,
+		"popped": false
+	})
 
 func _add_clouds():
-	# Add decorative clouds in background
 	for i in range(4):
 		var cloud = Node2D.new()
-		cloud.position = Vector2(randf_range(50, 590), randf_range(50, 200))
+		cloud.position = Vector2(randf_range(50, 590), randf_range(50, 150))
 		cloud.z_index = -5
 		cloud.set_script(_create_cloud_script())
 		add_child(cloud)
@@ -118,7 +143,6 @@ extends Node2D
 func _draw():
 	var cloud_color = Color(1.0, 1.0, 1.0, 0.9)
 	var shadow_color = Color(0.9, 0.9, 0.95, 0.7)
-	# Cloud puffs (overlapping circles)
 	draw_circle(Vector2(-20, 5), 20, shadow_color)
 	draw_circle(Vector2(20, 5), 22, shadow_color)
 	draw_circle(Vector2(0, 0), 28, cloud_color)
@@ -129,49 +153,51 @@ func _draw():
 	return script
 
 func _process(delta):
-	if not is_instance_valid(target):
-		return
-
-	time_elapsed += delta
+	time_elapsed += delta * speed_multiplier
 
 	# Timeout check
-	if time_elapsed >= GAME_DURATION:
+	if time_elapsed >= time_limit:
 		if not game_ended:
 			$sfx_lose.play()
 			end_game()
 			game_ended = true
 		return
 
-	# Stop game logic after game ends
 	if game_ended:
 		return
 
-	# Move target with Speed Multiplier
-	target.position += direction * speed * delta * speed_multiplier
+	# Move all balloons
+	for balloon_data in balloons:
+		if balloon_data["popped"]:
+			continue
 
-	# Bounce off walls
-	var radius = 40.0
+		var balloon = balloon_data["node"] as Area2D
+		if not is_instance_valid(balloon):
+			continue
 
-	if target.position.x < radius:
-		target.position.x = radius
-		direction.x *= -1
-	elif target.position.x > viewport_size.x - radius:
-		target.position.x = viewport_size.x - radius
-		direction.x *= -1
+		var direction = balloon_data["direction"] as Vector2
+		var spd = balloon_data["speed"] as float
 
-	if target.position.y < radius:
-		target.position.y = radius
-		direction.y *= -1
-	elif target.position.y > viewport_size.y - radius:
-		target.position.y = viewport_size.y - radius
-		direction.y *= -1
+		balloon.position += direction * spd * delta * speed_multiplier
+
+		# Bounce off walls
+		var radius = 40.0
+		if balloon.position.x < radius:
+			balloon.position.x = radius
+			balloon_data["direction"].x *= -1
+		elif balloon.position.x > viewport_size.x - radius:
+			balloon.position.x = viewport_size.x - radius
+			balloon_data["direction"].x *= -1
+
+		if balloon.position.y < radius:
+			balloon.position.y = radius
+			balloon_data["direction"].y *= -1
+		elif balloon.position.y > viewport_size.y - radius:
+			balloon.position.y = viewport_size.y - radius
+			balloon_data["direction"].y *= -1
 
 func _input(event):
-	# Ignore input after game ends
 	if game_ended:
-		return
-
-	if not is_instance_valid(target):
 		return
 
 	var pos: Vector2
@@ -182,12 +208,26 @@ func _input(event):
 	else:
 		return
 
-	# Check distance to target
-	if pos.distance_to(target.position) < 40:
-		$sfx_hit.play()
-		add_score(100)
-		$sfx_win.play()
-		end_game()
-		game_ended = true
-		print("BALLOON POPPED!")
-		target.queue_free()
+	# Check all balloons
+	for balloon_data in balloons:
+		if balloon_data["popped"]:
+			continue
+
+		var balloon = balloon_data["node"] as Area2D
+		if not is_instance_valid(balloon):
+			continue
+
+		if pos.distance_to(balloon.position) < 45:
+			# Pop this balloon!
+			$sfx_hit.play()
+			balloon_data["popped"] = true
+			balloon.queue_free()
+			balloons_popped += 1
+			add_score(10)
+
+			# Check win condition
+			if balloons_popped >= BALLOONS_TO_POP:
+				$sfx_win.play()
+				end_game()
+				game_ended = true
+			break  # Only pop one balloon per click

@@ -7,9 +7,40 @@
 | **Folder Structure** | Each game in own folder: `games/[game_name]/`          |
 | **Instruction**      | One word, ALL CAPS (e.g., "DODGE!", "CATCH!", "PUSH!") |
 | **Resolution**       | 640x640 pixels (square canvas)                         |
-| **Duration**         | 5 seconds                                              |
+| **Duration**         | 4 seconds (8 beats) normal, 8 seconds (16 beats) long  |
 | **Outcome**          | Binary pass/fail (score > 0 = pass, score = 0 = fail)  |
 | **Speed Multiplier** | 1.0x to 5.0x (progressive difficulty)                  |
+
+## Beat-Based Timing System
+
+All game timing is synchronized to **120 BPM** (beats per minute):
+
+| Duration Type   | Beats    | Seconds  | Usage                                      |
+| --------------- | -------- | -------- | ------------------------------------------ |
+| **Normal Game** | 8 beats  | 4 seconds | Most microgames (default)                  |
+| **Long Game**   | 16 beats | 8 seconds | Complex games (geo_stacker, space_invaders)|
+| **Intermission**| 4 beats  | 2 seconds | Between-game transitions                   |
+| **Countdown**   | 4 beats  | 2 seconds | Last 4 beats show 3, 2, 1, 0               |
+
+### Timing Constants (in Director)
+
+```gdscript
+const BPM: float = 120.0
+const BEAT_DURATION: float = 60.0 / BPM  # 0.5 seconds per beat
+const NORMAL_GAME_BEATS: int = 8   # 4 seconds
+const LONG_GAME_BEATS: int = 16    # 8 seconds
+```
+
+### Using Long Game Duration
+
+For complex games that need more time, override `time_limit` in `_ready()`:
+
+```gdscript
+func _ready():
+    instruction = "BUILD!"
+    time_limit = 8.0  # 16 beats for longer gameplay
+    super._ready()
+```
 
 ## File Structure
 
@@ -41,11 +72,10 @@ velocity * delta * speed_multiplier
 
 - **Win**: Call `add_score(positive_value)` then `end_game()` - game ends immediately
 - **Lose**: Call `end_game()` with score still at 0 - game ends immediately
-- **After end_game()**: Stop all game logic, but let the full 5-second timer run out before Director
-  transition
+- **After end_game()**: Stop all game logic, but let the full timer run out before Director transition
 - **No replay**: Games should not restart or loop - once ended, wait for Director
 - Director interprets: score > 0 = PASS, score == 0 = FAIL
-- Must call `end_game()` within 5 seconds (track with timer)
+- Must call `end_game()` within time_limit (default 4 seconds / 8 beats)
 
 ### Instruction
 
@@ -84,10 +114,11 @@ extends Microgame
 
 var time_elapsed: float = 0.0
 var game_ended: bool = false
-const GAME_DURATION: float = 5.0
 
 func _ready():
     instruction = "TAP!"
+    # time_limit defaults to 4.0 (8 beats at 120 BPM)
+    # For longer games: time_limit = 8.0 (16 beats)
     super._ready()
 
     # Setup game objects
@@ -96,8 +127,8 @@ func _ready():
 func _process(delta):
     time_elapsed += delta
 
-    # Check timeout - always let full 5 seconds run for Director
-    if time_elapsed >= GAME_DURATION:
+    # Check timeout - always let full time run for Director
+    if time_elapsed >= time_limit:
         if not game_ended:
             end_game()  # Timeout = fail (score still 0)
             game_ended = true
@@ -134,8 +165,9 @@ func _input(event):
 - [ ] One-word `instruction` set in `_ready()`
 - [ ] Call `super._ready()`
 - [ ] 640x640 resolution compatible
-- [ ] 5-second timer with timeout check
+- [ ] Timeout check using `time_limit` (default 4s, or 8s for long games)
 - [ ] `speed_multiplier` applied to all speeds
 - [ ] `add_score()` for positive outcome
 - [ ] `end_game()` called explicitly
 - [ ] Pass/fail outcome only (score > 0 or score = 0)
+- [ ] Game added to `GAME_LIST` in `shared/scripts/director.gd`

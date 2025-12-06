@@ -150,6 +150,9 @@ func _ready():
 	instruction = "SHOOT!"
 	super._ready()
 
+	# Override time limit - Space Invaders needs more time (16 beats = 8 seconds at 120 BPM)
+	time_limit = 8.0
+
 	_setup_game()
 
 func _setup_game():
@@ -262,10 +265,10 @@ func _setup_aliens():
 			aliens.append(alien)
 
 func _process(delta):
-	time_elapsed += delta
+	time_elapsed += delta * speed_multiplier
 
-	# Always let full 5 seconds run for Director timing
-	if time_elapsed >= GAME_DURATION:
+	# Always let full time run for Director timing
+	if time_elapsed >= time_limit:
 		if not game_ended:
 			_lose_game()
 		return

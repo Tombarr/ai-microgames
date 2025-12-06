@@ -62,8 +62,8 @@ This document organizes all microgames by style and gameplay type for easy refer
 
 ### Games in This Category:
 
-#### 1. **infinite_jump2** - Mario-Style Runner
-- **Path**: `games/infinite_jump2/`
+#### 1. **infinite_jump** - Mario-Style Runner
+- **Path**: `games/infinite_jump/`
 - **Instruction**: "DODGE!"
 - **Mechanic**: Jump over obstacles
 - **Physics**: Gravity 1800, Jump -650
@@ -138,7 +138,7 @@ This document organizes all microgames by style and gameplay type for easy refer
 | geo_stacker | Grid Puzzle | STACK! | Medium | Grid Puzzle ✓ |
 | loop_connect | Grid Puzzle | CONNECT! | Hard | Grid Puzzle ✓ |
 | minesweeper | Grid Puzzle | SWEEP! | Medium | Grid Puzzle ✓ |
-| infinite_jump2 | Platformer | DODGE! | Medium | Platformer ✓ |
+| infinite_jump | Platformer | DODGE! | Medium | Platformer ✓ |
 | flappy_bird | Platformer | TAP! | Hard | Platformer ✓ |
 | balloon_popper | Action | POP! | Easy | Hybrid |
 | money_grabber | Action | GRAB 30! | Medium | Hybrid |
@@ -154,7 +154,7 @@ This document organizes all microgames by style and gameplay type for easy refer
 → Study **box_pusher** → Follow **STYLE_GUIDE_GRID_PUZZLE.md**
 
 ### Want to make a platformer/runner?
-→ Study **infinite_jump2** → Follow **STYLE_GUIDE_PLATFORMER.md**
+→ Study **infinite_jump** → Follow **STYLE_GUIDE_PLATFORMER.md**
 
 ### Want to make an action/timing game?
 → Study **money_grabber** (spawning) or **balloon_popper** (single target)
@@ -186,7 +186,7 @@ This document organizes all microgames by style and gameplay type for easy refer
 ### Platformers (2 games)
 **Strengths**:
 - Two different scrolling styles (horizontal, vertical)
-- infinite_jump2 is comprehensive reference
+- infinite_jump is comprehensive reference
 
 **Opportunities**:
 - **NEEDS MORE GAMES** - Only 2 in this category

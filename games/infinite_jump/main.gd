@@ -13,7 +13,7 @@ extends Microgame
 # Sound effects
 const SFX_WIN = preload("res://shared/assets/sfx_win.wav")
 const SFX_LOSE = preload("res://shared/assets/sfx_lose.wav")
-const SFX_JUMP = preload("res://games/infinite_jump2/assets/sfx_jump.wav")
+const SFX_JUMP = preload("res://games/infinite_jump/assets/sfx_jump.wav")
 
 # Node references
 @onready var player = $Player
@@ -22,8 +22,8 @@ const SFX_JUMP = preload("res://games/infinite_jump2/assets/sfx_jump.wav")
 @onready var ground_visual = $Ground/Visual
 
 # Preload obstacle scenes
-var pipe_scene = preload("res://games/infinite_jump2/pipe.tscn")
-var goomba_scene = preload("res://games/infinite_jump2/goomba.tscn")
+var pipe_scene = preload("res://games/infinite_jump/pipe.tscn")
+var goomba_scene = preload("res://games/infinite_jump/goomba.tscn")
 
 # Game state
 var time_elapsed: float = 0.0
@@ -110,17 +110,14 @@ func _physics_process(delta):
 	player.move_and_slide()
 
 func _process(delta):
-	time_elapsed += delta
-	
-	# Check timeout - always let full 5 seconds run for Director
-	if time_elapsed >= GAME_DURATION:
+	time_elapsed += delta * speed_multiplier
+
+	# Check timeout - always let full time run for Director
+	if time_elapsed >= time_limit:
 		if not game_ended:
-			# Timeout = success if player survived
-			if obstacles_dodged > 0:
-				add_score(obstacles_dodged * 10)
-				$sfx_win.play()
-			else:
-				$sfx_lose.play()
+			# Timeout = WIN! Player survived the full time without getting hit
+			add_score(max(100, obstacles_dodged * 10))  # At least 100 points for surviving
+			$sfx_win.play()
 			end_game()
 			game_ended = true
 		return
@@ -208,25 +205,19 @@ func _on_spawn_timer_timeout():
 	
 	if randf() > 0.5:
 		# ========================================
-		# SPAWN PIPE (with height clamping)
+		# SPAWN PIPE (fixed jumpable height)
 		# ========================================
 		obstacle = pipe_scene.instantiate()
-		
-		# Get pipe collision dimensions
-		var pipe_height = 160.0  # Default pipe stem height
-		
-		# FIX: Clamp pipe height to 80% of max jump height
-		# This ensures Mario can ALWAYS jump over pipes
-		var max_allowed_pipe_height = max_jump_height * 0.7  # 70% safety margin
-		pipe_height = min(pipe_height, max_allowed_pipe_height)
-		
-		# FIX: Calculate Y position so BOTTOM of pipe touches floor
-		# pipe.position is at top-left of sprite, so we subtract height
+
+		# Pipe is now 80 pixels tall (matches collision and visual)
+		var pipe_height = 80.0
+
+		# Calculate Y position so BOTTOM of pipe touches floor
 		var pipe_y = FLOOR_Y - pipe_height
-		
+
 		obstacle.position = Vector2(spawn_x, pipe_y)
-		
-		print("Pipe spawned at Y: ", pipe_y, " (Height: ", pipe_height, ", Max allowed: ", max_allowed_pipe_height, ")")
+
+		print("Pipe spawned at Y: ", pipe_y, " (Height: ", pipe_height, ")")
 	else:
 		# ========================================
 		# SPAWN GOOMBA (mushroom enemy)

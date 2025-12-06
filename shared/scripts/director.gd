@@ -16,11 +16,12 @@ const GAME_LIST: Array[String] = [
 	"minesweeper",     # Classic sweep
 
 	# Platformers & Runners (physics-based, reflex)
-	"infinite_jump2",  # Mario runner - STYLE_GUIDE_PLATFORMER.md
+	"infinite_jump",   # Mario runner - STYLE_GUIDE_PLATFORMER.md
 	"flappy_bird",     # Vertical scroller
 
 	# Action & Timing (tap targets, real-time)
 	"balloon_popper",  # Single target
+	"dont_touch",      # Resist clicking buttons
 	"money_grabber",   # Collection game
 	"space_invaders",  # Shooter
 	"whack_a_mole",    # Timing game
@@ -46,9 +47,19 @@ var score_label: Label
 var message_label: Label
 var progress_bar: ColorRect
 var progress_bar_bg: ColorRect
+var countdown_label: Label  # Shows 3, 2, 1, 0 countdown synced to beats
+var last_countdown_beat: int = -1  # Track last shown countdown beat
 var game_title_label: Label
 var status_label: Label
 var game_debugger: Node
+
+# Beat-based timing (120 BPM)
+const BPM: float = 120.0
+const BEAT_DURATION: float = 60.0 / BPM  # 0.5 seconds per beat
+const NORMAL_GAME_BEATS: int = 8  # 4 seconds
+const LONG_GAME_BEATS: int = 16  # 8 seconds
+const INTERMISSION_BEATS: int = 4  # 2 seconds
+const COUNTDOWN_BEATS: int = 4  # Last 4 beats show 3, 2, 1, 0
 
 # Audio
 var countdown_player: AudioStreamPlayer
@@ -72,7 +83,8 @@ func _process(delta: float) -> void:
 	if not game_active:
 		return
 
-	game_timer += delta
+	# Timer speeds up with game speed - faster games have faster timers
+	game_timer += delta * current_speed_multiplier
 	var time_remaining = max(0, current_time_limit - game_timer)
 	var progress = time_remaining / current_time_limit
 
@@ -89,6 +101,31 @@ func _process(delta: float) -> void:
 			progress_bar.color = Color(0.9, 0.7, 0.1)  # Yellow
 		else:
 			progress_bar.color = Color(0.9, 0.2, 0.2)  # Red
+
+	# Update beat-synced countdown (3, 2, 1, 0 in last 4 beats)
+	var beats_remaining = int(ceil(time_remaining / BEAT_DURATION))
+	if beats_remaining <= COUNTDOWN_BEATS and beats_remaining >= 0:
+		countdown_label.visible = true
+		var countdown_num = beats_remaining  # 3, 2, 1, 0
+		countdown_label.text = str(countdown_num)
+
+		# Pulse effect on beat change
+		if countdown_num != last_countdown_beat:
+			last_countdown_beat = countdown_num
+			# Scale up then back to normal
+			countdown_label.scale = Vector2(1.5, 1.5)
+			var tween = create_tween()
+			tween.tween_property(countdown_label, "scale", Vector2(1.0, 1.0), BEAT_DURATION * 0.3)
+
+			# Color based on urgency
+			if countdown_num <= 1:
+				countdown_label.add_theme_color_override("font_color", Color(1.0, 0.2, 0.2))  # Red
+			elif countdown_num == 2:
+				countdown_label.add_theme_color_override("font_color", Color(1.0, 0.7, 0.1))  # Yellow
+			else:
+				countdown_label.add_theme_color_override("font_color", Color.WHITE)
+	else:
+		countdown_label.visible = false
 
 	# Check for timeout
 	if time_remaining <= 0:
@@ -155,7 +192,18 @@ func _setup_ui() -> void:
 	progress_bar.visible = false
 	progress_bar.z_index = 100  # Ensure timer is on top of game content
 	add_child(progress_bar)
-	
+
+	# Create countdown label (bottom left, shows 3, 2, 1, 0 synced to beats)
+	countdown_label = Label.new()
+	countdown_label.position = Vector2(20, viewport_size.y - 80)
+	countdown_label.add_theme_font_size_override("font_size", 48)
+	countdown_label.add_theme_color_override("font_color", Color.WHITE)
+	countdown_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	countdown_label.add_theme_constant_override("outline_size", 4)
+	countdown_label.visible = false
+	countdown_label.z_index = 101  # Above progress bar
+	add_child(countdown_label)
+
 	# Create game title label (centered, for intro animation)
 	game_title_label = Label.new()
 	game_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -287,8 +335,8 @@ func _load_and_start_game(game_id: String) -> void:
 	# Update URL with current game (for sharing)
 	_update_url_game_param(game_id)
 
-	# Generate random time limit between 5-10 seconds
-	current_time_limit = randf_range(5.0, 10.0)
+	# Beat-based timing: 8 beats = 4 seconds at 120 BPM
+	current_time_limit = NORMAL_GAME_BEATS * BEAT_DURATION  # 4 seconds
 	game_timer = 0.0
 
 	# Path to scene
@@ -317,7 +365,10 @@ func _load_and_start_game(game_id: String) -> void:
 	# Make game invisible initially for intro animation
 	current_game.modulate = Color(1, 1, 1, 0)
 	add_child(current_game)
-	
+
+	# Read back time_limit in case game overrode it in _ready()
+	current_time_limit = current_game.time_limit
+
 	# Connect signals
 	current_game.game_over.connect(_on_game_over)
 	
@@ -328,14 +379,17 @@ func _on_game_over(game_score: int) -> void:
 	# Prevent double-handling (game already ended)
 	if not game_active:
 		return
-	
+
 	game_active = false
 	print("Director: Game finished. Score: ", game_score)
-	
+
+	# Hide countdown label
+	countdown_label.visible = false
+
 	# Disconnect signal to prevent duplicate calls
 	if is_instance_valid(current_game) and current_game.game_over.is_connected(_on_game_over):
 		current_game.game_over.disconnect(_on_game_over)
-	
+
 	# Determine win/lose
 	var did_win = game_score > 0
 	
@@ -369,17 +423,16 @@ func _on_game_over(game_score: int) -> void:
 	_update_ui(round_message)
 	ui_layer.visible = true
 
-	# Wait 1 second to show result
-	await get_tree().create_timer(1.0).timeout
+	# Wait 2 beats to show result (1 second at 120 BPM)
+	await get_tree().create_timer(BEAT_DURATION * 2).timeout
 
 	# Play countdown sound with pitch based on speed multiplier
 	# Formula: pitch increases as speed increases (1.0x = 1.0 pitch, 5.0x = 2.0 pitch)
 	countdown_player.pitch_scale = 0.8 + (current_speed_multiplier - 1.0) * 0.3
 	countdown_player.play()
 
-	# Wait for countdown to finish (1 second at normal speed, faster at higher speeds)
-	var countdown_duration = 1.0 / countdown_player.pitch_scale
-	await get_tree().create_timer(countdown_duration).timeout
+	# Wait remaining 2 beats for countdown (total 4 beats = 2 seconds)
+	await get_tree().create_timer(BEAT_DURATION * 2).timeout
 
 	ui_layer.visible = false
 
@@ -429,6 +482,11 @@ func _start_game_intro(title: String) -> void:
 	game_active = true
 	game_timer = 0.0
 
+	# Reset countdown state
+	last_countdown_beat = -1
+	countdown_label.visible = false
+	countdown_label.add_theme_color_override("font_color", Color.WHITE)
+
 	# Show game title as brief overlay on top of game
 	game_title_label.text = title
 	game_title_label.visible = true
@@ -449,11 +507,52 @@ func _start_game_intro(title: String) -> void:
 func _on_game_timeout() -> void:
 	if not game_active:
 		return
-	
+
 	print("Director: Game timed out! Player loses.")
-	
+
+	# Show explosion effect at countdown position
+	_show_explosion_effect()
+
+	# Hide countdown
+	countdown_label.visible = false
+
 	# Timeout always means loss - call _on_game_over with score 0
 	_on_game_over(0)
+
+func _show_explosion_effect() -> void:
+	var viewport_size = get_viewport().get_visible_rect().size
+	var explosion_pos = Vector2(60, viewport_size.y - 60)  # Near countdown position
+
+	# Create explosion particles using custom drawing
+	var explosion = Node2D.new()
+	explosion.position = explosion_pos
+	explosion.z_index = 102
+	add_child(explosion)
+
+	# Create multiple particle circles that expand outward
+	var colors = [Color(1.0, 0.8, 0.0), Color(1.0, 0.4, 0.0), Color(1.0, 0.2, 0.0), Color(0.8, 0.0, 0.0)]
+
+	for i in range(12):
+		var particle = ColorRect.new()
+		particle.size = Vector2(16, 16)
+		particle.position = Vector2(-8, -8)  # Center it
+		particle.color = colors[i % colors.size()]
+		particle.pivot_offset = Vector2(8, 8)
+		explosion.add_child(particle)
+
+		# Animate each particle outward
+		var angle = (i / 12.0) * TAU
+		var distance = randf_range(60, 100)
+		var target_pos = Vector2(cos(angle), sin(angle)) * distance
+
+		var tween = create_tween()
+		tween.set_parallel(true)
+		tween.tween_property(particle, "position", target_pos, 0.4).set_ease(Tween.EASE_OUT)
+		tween.tween_property(particle, "modulate:a", 0.0, 0.4)
+		tween.tween_property(particle, "scale", Vector2(0.2, 0.2), 0.4)
+
+	# Clean up after animation
+	get_tree().create_timer(0.5).timeout.connect(func(): explosion.queue_free())
 
 func _show_game_start_sequence() -> void:
 	# Show title screen with "GET READY!"
@@ -494,11 +593,20 @@ func _show_game_over_screen() -> void:
 	# Wait for game over sound to finish (3.5 seconds)
 	await get_tree().create_timer(3.5).timeout
 
-	# Check if player made top 10
-	if LeaderboardManager.is_top_10(score):
-		await _show_name_entry()
+	# Auto-submit score if > 0
+	if score > 0:
+		# Check if player made top 10 - let them enter name
+		if LeaderboardManager.is_top_10(score):
+			await _show_name_entry()
+		else:
+			# Auto-submit with default name for non-top-10 scores
+			message_label.text = "SUBMITTING..."
+			LeaderboardManager.add_entry("PLAYER", score)
+			await LeaderboardManager.score_submitted
+			await _show_leaderboard(false)
 	else:
-		_show_play_again_button()
+		# Score is 0, just show leaderboard
+		await _show_leaderboard(false)
 
 func _show_name_entry() -> void:
 	message_label.text = "TOP 10 SCORE!"
@@ -700,6 +808,17 @@ func _show_leaderboard(show_leaderboard_button: bool = true) -> void:
 		_show_play_again_and_share_only()
 
 func _show_play_again_and_share_only() -> void:
+	# Check if buttons already exist to prevent duplicates
+	for child in ui_layer.get_children():
+		if child is CenterContainer:
+			for subchild in child.get_children():
+				if subchild is VBoxContainer:
+					var existing_row = subchild.get_node_or_null("ButtonRow")
+					if existing_row and is_instance_valid(existing_row) and not existing_row.is_queued_for_deletion():
+						return  # Buttons already exist, don't create duplicates
+					break
+			break
+
 	# Create "Play Again" button
 	var play_again_button = Button.new()
 	play_again_button.name = "PlayAgainButton"
@@ -737,13 +856,22 @@ func _show_play_again_and_share_only() -> void:
 	share_button.pressed.connect(_on_share_pressed)
 
 func _on_play_again_pressed() -> void:
-	# Remove all UI buttons
+	# Remove ALL dynamic UI elements (buttons, scroll containers, etc.)
 	for child in ui_layer.get_children():
 		if child is CenterContainer:
 			for subchild in child.get_children():
 				if subchild is VBoxContainer:
+					# Remove button row container
+					var button_row = subchild.get_node_or_null("ButtonRow")
+					if button_row:
+						button_row.queue_free()
+					# Remove leaderboard scroll container
+					var scroll = subchild.get_node_or_null("LeaderboardScroll")
+					if scroll:
+						scroll.queue_free()
+					# Remove any individual buttons
 					for button_child in subchild.get_children():
-						if button_child is Button:
+						if button_child is Button or button_child is ScrollContainer or button_child is HBoxContainer:
 							button_child.queue_free()
 					break
 			break

@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document describes the technical architecture of the **AI Microgames Platform**, a WarioWare-style infinite arcade where 5-second microgames provide rapid-fire gameplay with progressive difficulty scaling.
+This document describes the technical architecture of the **AI Microgames Platform**, a WarioWare-style infinite arcade where beat-synced microgames (4-8 seconds at 120 BPM) provide rapid-fire gameplay with progressive difficulty scaling.
 
 **Technology Stack**:
 - **Client**: Godot 4.5.1 (GDScript 2.0)
@@ -88,7 +88,7 @@ All games extend this base class, which defines the contract between individual 
 var current_score: int = 0           # Win indicator (>0 = pass, 0 = fail)
 var speed_multiplier: float = 1.0    # Difficulty scaling (1.0-5.0x)
 var instruction: String = ""         # One-word command (e.g., "DODGE!")
-var time_limit: float = 5.0          # Set by Director (5-10 seconds)
+var time_limit: float = 4.0          # Set by Director (4s=8 beats, 8s=16 beats at 120 BPM)
 var game_name: String = ""           # Display name (set by Director)
 ```
 
@@ -118,18 +118,19 @@ extends Microgame
 
 var time_elapsed: float = 0.0
 var game_ended: bool = false
-const GAME_DURATION: float = 5.0
 
 func _ready():
     instruction = "TAP!"  # Required: One word, ALL CAPS
+    # time_limit defaults to 4.0 (8 beats at 120 BPM)
+    # For longer games: time_limit = 8.0 (16 beats)
     super._ready()
     _setup_game()
 
 func _process(delta):
     time_elapsed += delta
 
-    # Always let full 5 seconds run for Director timing
-    if time_elapsed >= GAME_DURATION:
+    # Always let full time run for Director timing
+    if time_elapsed >= time_limit:
         if not game_ended:
             end_game()  # Timeout = fail (score still 0)
             game_ended = true
@@ -177,7 +178,7 @@ The Director is the central orchestrator that manages the entire game loop.
      ```gdscript
      const GAME_LIST: Array[String] = [
          "balloon_popper", "box_pusher", "flappy_bird", "geo_stacker",
-         "infinite_jump2", "loop_connect", "minesweeper", "money_grabber",
+         "infinite_jump", "loop_connect", "minesweeper", "money_grabber",
          "space_invaders", "whack_a_mole"
      ]
      ```
@@ -186,8 +187,9 @@ The Director is the central orchestrator that manages the entire game loop.
 2. **Lifecycle Management**
    - Load game scene
    - Set `speed_multiplier` property
-   - Show 1-second title overlay
-   - Start randomized timer (5-10 seconds)
+   - Show intermission (4 beats / 2 seconds)
+   - Start beat-synced timer (8 beats / 4s normal, 16 beats / 8s long)
+   - Display 3-2-1-0 countdown in last 4 beats
    - Listen for `game_over(score)` signal
    - Handle timeout (score = 0 → fail)
 
@@ -223,9 +225,9 @@ The Director is the central orchestrator that manages the entire game loop.
         ↓
 [Set speed_multiplier on instance]
         ↓
-[Show 1-second title overlay]
+[Show intermission (4 beats / 2s)]
         ↓
-[Start 5-10 second timer]
+[Start beat-synced timer (8 or 16 beats)]
         ↓
 [Game Active - wait for game_over signal]
         ↓
@@ -417,7 +419,7 @@ games/
 2. **box_pusher** - Push box to goal (Sokoban-style)
 3. **flappy_bird** - Navigate through pipes
 4. **geo_stacker** - Stack Tetris-style shapes
-5. **infinite_jump2** - Platforming challenge
+5. **infinite_jump** - Platforming challenge
 6. **loop_connect** - Connect path puzzle
 7. **minesweeper** - Classic minesweeper variant
 8. **money_grabber** - Collect falling items (reach target score)
@@ -430,7 +432,7 @@ games/
   - Grid layout with ASCII levels
   - Touch swipe controls
   - See [STYLE_GUIDE_GRID_PUZZLE.md](STYLE_GUIDE_GRID_PUZZLE.md)
-- **Platformer/Runner**: [`games/infinite_jump2/main.gd`](games/infinite_jump2/main.gd)
+- **Platformer/Runner**: [`games/infinite_jump/main.gd`](games/infinite_jump/main.gd)
   - Mario-style infinite runner
   - Physics-based jumping
   - Scrolling obstacles
@@ -1607,7 +1609,7 @@ ai-microgames/
 │   ├── box_pusher/
 │   ├── flappy_bird/
 │   ├── geo_stacker/
-│   ├── infinite_jump2/
+│   ├── infinite_jump/
 │   ├── loop_connect/
 │   ├── minesweeper/
 │   ├── money_grabber/
@@ -1628,7 +1630,7 @@ ai-microgames/
 
 | Term | Definition |
 |------|------------|
-| **Microgame** | 5-second mini-game with binary pass/fail outcome |
+| **Microgame** | Beat-synced mini-game (4-8s at 120 BPM) with binary pass/fail outcome |
 | **Director** | Central orchestrator that manages game loop and progression |
 | **Speed Multiplier** | Difficulty scaling factor (1.0-5.0x) that increases per win |
 | **Game Pack** | Collection of 3-10 microgames distributed as DLC |

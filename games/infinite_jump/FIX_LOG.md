@@ -1,4 +1,4 @@
-# Fix Log - infinite_jump2
+# Fix Log - infinite_jump
 
 ## Issue
 Git merge conflict markers were present in `main.tscn`, causing parse errors:
@@ -21,28 +21,28 @@ These markers are not valid Godot scene syntax.
 - Kept the correct infinite_jump game content
 
 ### 2. Updated All Resource Paths
-Changed all paths from `infinite_jump/` to `infinite_jump2/`:
+Changed all paths from `infinite_jump/` to `infinite_jump/`:
 
 **main.tscn:**
-- `res://games/infinite_jump/main.gd` → `res://games/infinite_jump2/main.gd`
-- `res://games/infinite_jump/ground_visual.gd` → `res://games/infinite_jump2/ground_visual.gd`
-- `res://games/infinite_jump/player_sprite.gd` → `res://games/infinite_jump2/player_sprite.gd`
+- `res://games/infinite_jump/main.gd` → `res://games/infinite_jump/main.gd`
+- `res://games/infinite_jump/ground_visual.gd` → `res://games/infinite_jump/ground_visual.gd`
+- `res://games/infinite_jump/player_sprite.gd` → `res://games/infinite_jump/player_sprite.gd`
 
 **main.gd:**
-- `res://games/infinite_jump/pipe.tscn` → `res://games/infinite_jump2/pipe.tscn`
-- `res://games/infinite_jump/goomba.tscn` → `res://games/infinite_jump2/goomba.tscn`
+- `res://games/infinite_jump/pipe.tscn` → `res://games/infinite_jump/pipe.tscn`
+- `res://games/infinite_jump/goomba.tscn` → `res://games/infinite_jump/goomba.tscn`
 
 **pipe.tscn:**
-- `res://games/infinite_jump/pipe.gd` → `res://games/infinite_jump2/pipe.gd`
-- `res://games/infinite_jump/pipe_visual.gd` → `res://games/infinite_jump2/pipe_visual.gd`
+- `res://games/infinite_jump/pipe.gd` → `res://games/infinite_jump/pipe.gd`
+- `res://games/infinite_jump/pipe_visual.gd` → `res://games/infinite_jump/pipe_visual.gd`
 
 **goomba.tscn:**
-- `res://games/infinite_jump/goomba.gd` → `res://games/infinite_jump2/goomba.gd`
-- `res://games/infinite_jump/goomba_visual.gd` → `res://games/infinite_jump2/goomba_visual.gd`
+- `res://games/infinite_jump/goomba.gd` → `res://games/infinite_jump/goomba.gd`
+- `res://games/infinite_jump/goomba_visual.gd` → `res://games/infinite_jump/goomba_visual.gd`
 
 ## Result
 ✅ Game now loads without errors
-✅ All resources properly point to infinite_jump2 folder
+✅ All resources properly point to infinite_jump folder
 ✅ Director can discover and run the game
 
 ## Date Fixed
@@ -56,7 +56,7 @@ Changed all paths from `infinite_jump/` to `infinite_jump2/`:
 Game still wouldn't load after fixing merge conflicts.
 
 ### Root Cause
-All UIDs in infinite_jump2 were pointing to infinite_jump resources, causing Godot to be confused about which resources to load.
+All UIDs in infinite_jump were pointing to infinite_jump resources, causing Godot to be confused about which resources to load.
 
 ### Fixes Applied
 

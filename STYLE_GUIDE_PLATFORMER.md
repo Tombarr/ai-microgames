@@ -2,11 +2,11 @@
 
 ## Overview
 
-This style guide captures the patterns from **infinite_jump2** (Mario-style infinite runner) for creating physics-based platformer and auto-runner microgames.
+This style guide captures the patterns from **infinite_jump** (Mario-style infinite runner) for creating physics-based platformer and auto-runner microgames.
 
 **Best for**: Platformers, endless runners, obstacle courses, jumping challenges, timing-based games
 
-**Reference Implementation**: [`games/infinite_jump2/main.gd`](games/infinite_jump2/main.gd)
+**Reference Implementation**: [`games/infinite_jump/main.gd`](games/infinite_jump/main.gd)
 
 ---
 
@@ -327,14 +327,13 @@ func _process(delta):
 func _process(delta):
     time_elapsed += delta
 
-    if time_elapsed >= GAME_DURATION:
+    # time_limit defaults to 4.0 (8 beats at 120 BPM)
+    # For longer games: set time_limit = 8.0 in _ready()
+    if time_elapsed >= time_limit:
         if not game_ended:
-            # Win if survived
-            if obstacles_dodged > 0:
-                add_score(obstacles_dodged * 10)
-                $sfx_win.play()
-            else:
-                $sfx_lose.play()
+            # Survival = win (at least 100 points)
+            add_score(max(100, obstacles_dodged * 10))
+            $sfx_win.play()
             end_game()
             game_ended = true
         return
@@ -481,13 +480,13 @@ scroll_offset += ground_speed * delta
 # Game state
 var time_elapsed: float = 0.0
 var game_ended: bool = false
-const GAME_DURATION: float = 5.0
+# time_limit is set by Director: 4.0 (8 beats) or 8.0 (16 beats)
 
 func _process(delta):
     time_elapsed += delta
 
-    # Timeout check
-    if time_elapsed >= GAME_DURATION:
+    # Timeout check using time_limit (inherited from Microgame)
+    if time_elapsed >= time_limit:
         if not game_ended:
             _handle_timeout()
             game_ended = true
@@ -703,10 +702,10 @@ func _ready():
 
 ## Example Games Using This Style
 
-- **infinite_jump2** - Mario-style infinite runner (reference implementation)
+- **infinite_jump** - Mario-style infinite runner (reference implementation)
 - **flappy_bird** - Vertical scrolling with gap obstacles
 - **space_invaders** - Horizontal movement with projectiles (variation)
 
 ---
 
-**Reference Implementation**: See [`games/infinite_jump2/main.gd`](games/infinite_jump2/main.gd) for complete working example with extensive comments.
+**Reference Implementation**: See [`games/infinite_jump/main.gd`](games/infinite_jump/main.gd) for complete working example with extensive comments.

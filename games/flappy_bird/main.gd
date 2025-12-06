@@ -237,10 +237,10 @@ func _draw():
 		add_child(cloud)
 
 func _process(delta):
-	time_elapsed += delta
+	time_elapsed += delta * speed_multiplier
 
-	# Check timeout - surviving 5 seconds is a win!
-	if time_elapsed >= GAME_DURATION:
+	# Check timeout - surviving the time limit is a win!
+	if time_elapsed >= time_limit:
 		if not game_ended:
 			add_score(100)  # Win by survival
 			$sfx_win.play()

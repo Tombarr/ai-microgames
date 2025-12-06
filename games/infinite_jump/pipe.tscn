@@ -1,10 +1,10 @@
 [gd_scene load_steps=4 format=3 uid="uid://bn7tcw3n3ox28"]
 
-[ext_resource type="Script" uid="uid://xj2xkoxdup5w" path="res://games/infinite_jump2/pipe.gd" id="1_pipe"]
-[ext_resource type="Script" uid="uid://bnqutbh57acfo" path="res://games/infinite_jump2/pipe_visual.gd" id="2_pipe_visual"]
+[ext_resource type="Script" uid="uid://xj2xkoxdup5w" path="res://games/infinite_jump/pipe.gd" id="1_pipe"]
+[ext_resource type="Script" uid="uid://bnqutbh57acfo" path="res://games/infinite_jump/pipe_visual.gd" id="2_pipe_visual"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_pipe"]
-size = Vector2(40, 160)
+size = Vector2(40, 80)
 
 [node name="Pipe" type="Area2D"]
 script = ExtResource("1_pipe")
@@ -13,5 +13,5 @@ script = ExtResource("1_pipe")
 script = ExtResource("2_pipe_visual")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(24, 90)
+position = Vector2(24, 40)
 shape = SubResource("RectangleShape2D_pipe")

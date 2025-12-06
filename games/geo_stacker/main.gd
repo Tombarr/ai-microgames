@@ -75,17 +75,23 @@ const GAME_DURATION: float = 5.0
 var touch_start_pos: Vector2 = Vector2.ZERO
 var touch_active: bool = false
 var swipe_processed: bool = false  # Track if swipe was already processed
-var drag_dropping: bool = false  # Track if user is drag-dropping the piece
+var drag_dropping: bool = false  # Track if user is drag-dropping the piece vertically
+var drag_horizontal: bool = false  # Track if user is dragging horizontally
 var last_drag_y: float = 0.0  # Track last drag position for continuous drop
+var last_drag_x: float = 0.0  # Track last drag position for continuous horizontal movement
 var mouse_button_held: bool = false  # Track if mouse button is held
 const SWIPE_THRESHOLD: float = 30.0  # Minimum distance for a swipe
 const TAP_THRESHOLD: float = 10.0  # Maximum distance for a tap (rotation)
 const DRAG_DROP_STEP: float = 20.0  # Pixels to drag before moving piece down one cell
+const DRAG_HORIZONTAL_STEP: float = 40.0  # Pixels to drag before moving piece left/right one cell
 
 func _ready():
 	instruction = "STACK!"
 	super._ready()
-	
+
+	# Override time limit - Tetris needs more time (16 beats = 8 seconds at 120 BPM)
+	time_limit = 8.0
+
 	_initialize_sounds()
 	_initialize_grid()
 	_draw_grid_background()
@@ -231,10 +237,10 @@ func _rotate_shape(shape: Array) -> Array:
 	return normalized
 
 func _process(delta):
-	time_elapsed += delta
+	time_elapsed += delta * speed_multiplier
 
-	# Check timeout - always let full 5 seconds run for Director
-	if time_elapsed >= GAME_DURATION:
+	# Check timeout - always let full time run for Director
+	if time_elapsed >= time_limit:
 		if not game_ended:
 			# Timeout = fail (no lines cleared)
 			_end_game(false)
@@ -268,9 +274,11 @@ func _input(event):
 			touch_start_pos = event.position
 			swipe_processed = false
 			drag_dropping = false
+			drag_horizontal = false
 		else:
 			touch_active = false
 			drag_dropping = false
+			drag_horizontal = false
 			if not swipe_processed:
 				var swipe_vector = event.position - touch_start_pos
 				var swipe_length = swipe_vector.length()
@@ -292,31 +300,40 @@ func _input(event):
 						if swipe_vector.y > 0:
 							_move_piece(Vector2(0, 1))
 
-	# Screen drag for continuous drop control
+	# Screen drag for continuous movement control
 	elif event is InputEventScreenDrag and touch_active:
 		var swipe_vector = event.position - touch_start_pos
 		var swipe_length = swipe_vector.length()
 
-		# Check if dragging downward
-		if swipe_vector.y > 0 and swipe_length >= SWIPE_THRESHOLD:
-			# Start drag-drop mode
-			if not drag_dropping:
+		# Determine drag direction based on initial movement
+		if swipe_length >= SWIPE_THRESHOLD and not drag_dropping and not drag_horizontal:
+			if abs(swipe_vector.y) > abs(swipe_vector.x) and swipe_vector.y > 0:
+				# Start vertical drag-drop mode
 				drag_dropping = true
 				last_drag_y = touch_start_pos.y
 				swipe_processed = true
+			elif abs(swipe_vector.x) > abs(swipe_vector.y):
+				# Start horizontal drag mode
+				drag_horizontal = true
+				last_drag_x = touch_start_pos.x
+				swipe_processed = true
 
-			# Move piece down for every DRAG_DROP_STEP pixels dragged
+		# Continuous vertical dragging
+		if drag_dropping:
 			var drag_distance = event.position.y - last_drag_y
 			if drag_distance >= DRAG_DROP_STEP:
 				_move_piece(Vector2(0, 1))
 				last_drag_y = event.position.y
-		# Horizontal drag for left/right movement
-		elif abs(swipe_vector.x) > abs(swipe_vector.y) and swipe_length >= SWIPE_THRESHOLD and not swipe_processed:
-			swipe_processed = true
-			if swipe_vector.x > 0:
-				_move_piece(Vector2(1, 0))
-			else:
-				_move_piece(Vector2(-1, 0))
+
+		# Continuous horizontal dragging
+		if drag_horizontal:
+			var drag_distance = event.position.x - last_drag_x
+			if abs(drag_distance) >= DRAG_HORIZONTAL_STEP:
+				if drag_distance > 0:
+					_move_piece(Vector2(1, 0))
+				else:
+					_move_piece(Vector2(-1, 0))
+				last_drag_x = event.position.x
 
 	# Mouse input for desktop compatibility
 	elif event is InputEventMouseButton:
@@ -326,9 +343,11 @@ func _input(event):
 				touch_start_pos = event.position
 				swipe_processed = false
 				drag_dropping = false
+				drag_horizontal = false
 			else:
 				mouse_button_held = false
 				drag_dropping = false
+				drag_horizontal = false
 				# Simple click actions (if not dragged)
 				if not swipe_processed:
 					var viewport_width = get_viewport_rect().size.x
@@ -341,24 +360,40 @@ func _input(event):
 		elif event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 			_rotate_piece()
 
-	# Mouse drag for continuous drop control (desktop)
+	# Mouse drag for continuous movement control (desktop)
 	elif event is InputEventMouseMotion and mouse_button_held:
 		var drag_vector = event.position - touch_start_pos
 		var drag_length = drag_vector.length()
 
-		# Check if dragging downward
-		if drag_vector.y > 0 and drag_length >= SWIPE_THRESHOLD:
-			# Start drag-drop mode
-			if not drag_dropping:
+		# Determine drag direction based on initial movement
+		if drag_length >= SWIPE_THRESHOLD and not drag_dropping and not drag_horizontal:
+			if abs(drag_vector.y) > abs(drag_vector.x) and drag_vector.y > 0:
+				# Start vertical drag-drop mode
 				drag_dropping = true
 				last_drag_y = touch_start_pos.y
 				swipe_processed = true
+			elif abs(drag_vector.x) > abs(drag_vector.y):
+				# Start horizontal drag mode
+				drag_horizontal = true
+				last_drag_x = touch_start_pos.x
+				swipe_processed = true
 
-			# Move piece down for every DRAG_DROP_STEP pixels dragged
+		# Continuous vertical dragging
+		if drag_dropping:
 			var drag_distance = event.position.y - last_drag_y
 			if drag_distance >= DRAG_DROP_STEP:
 				_move_piece(Vector2(0, 1))
 				last_drag_y = event.position.y
+
+		# Continuous horizontal dragging
+		if drag_horizontal:
+			var drag_distance = event.position.x - last_drag_x
+			if abs(drag_distance) >= DRAG_HORIZONTAL_STEP:
+				if drag_distance > 0:
+					_move_piece(Vector2(1, 0))
+				else:
+					_move_piece(Vector2(-1, 0))
+				last_drag_x = event.position.x
 
 	# Keyboard input for arrow keys
 	if event.is_action_pressed("ui_left") or event.is_action_pressed("move_left"):

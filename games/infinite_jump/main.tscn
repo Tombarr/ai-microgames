@@ -1,8 +1,8 @@
 [gd_scene load_steps=5 format=3 uid="uid://c3j8x9y2k4m6n8"]
 
-[ext_resource type="Script" uid="uid://djh5glqo4esvf" path="res://games/infinite_jump2/main.gd" id="1_main"]
-[ext_resource type="Script" uid="uid://dlh804l1ibnho" path="res://games/infinite_jump2/ground_visual.gd" id="2_ground_visual"]
-[ext_resource type="Script" uid="uid://b4kncetlkgd4i" path="res://games/infinite_jump2/player_sprite.gd" id="3_player_sprite"]
+[ext_resource type="Script" uid="uid://djh5glqo4esvf" path="res://games/infinite_jump/main.gd" id="1_main"]
+[ext_resource type="Script" uid="uid://dlh804l1ibnho" path="res://games/infinite_jump/ground_visual.gd" id="2_ground_visual"]
+[ext_resource type="Script" uid="uid://b4kncetlkgd4i" path="res://games/infinite_jump/player_sprite.gd" id="3_player_sprite"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_1"]
 size = Vector2(640, 120)

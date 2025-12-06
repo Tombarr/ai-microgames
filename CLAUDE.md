@@ -5,10 +5,38 @@ repository.
 
 ## Project Overview
 
-WarioWare-style microgame platform. Each game is 5 seconds, pass/fail outcome, with progressive
+WarioWare-style microgame platform with beat-synced timing. Pass/fail outcome with progressive
 difficulty via speed multiplier (1x-5x).
 
 **Stack**: Godot 4.5.1 (GDScript 2.0)
+
+## Beat-Based Timing System
+
+All game timing is synced to **120 BPM** (beats per minute):
+
+| Duration Type | Beats | Seconds | Usage |
+|---------------|-------|---------|-------|
+| **Normal Game** | 8 beats | 4 seconds | Most microgames |
+| **Long Game** | 16 beats | 8 seconds | Complex games (geo_stacker, space_invaders) |
+| **Intermission** | 4 beats | 2 seconds | Between-game transitions |
+| **Countdown** | 4 beats | 2 seconds | Shows 3, 2, 1, 0 in last 4 beats |
+
+**Key Constants** (in `director.gd`):
+```gdscript
+const BPM: float = 120.0
+const BEAT_DURATION: float = 60.0 / BPM  # 0.5 seconds per beat
+const NORMAL_GAME_BEATS: int = 8   # 4 seconds
+const LONG_GAME_BEATS: int = 16    # 8 seconds
+const INTERMISSION_BEATS: int = 4  # 2 seconds
+```
+
+**For longer games**, override `time_limit` in `_ready()`:
+```gdscript
+func _ready():
+    instruction = "STACK!"
+    super._ready()
+    time_limit = 8.0  # 16 beats for complex games
+```
 
 ## Commands
 
@@ -164,7 +192,7 @@ Director auto-discovers games with `main.tscn` in `games/` folder. Just run the 
 Reference implementations:
 
 - `games/box_pusher/` - Grid-based Sokoban puzzle (**STYLE_GUIDE_GRID_PUZZLE.md**)
-- `games/infinite_jump2/` - Mario-style infinite runner (**STYLE_GUIDE_PLATFORMER.md**)
+- `games/infinite_jump/` - Mario-style infinite runner (**STYLE_GUIDE_PLATFORMER.md**)
 - `games/money_grabber/` - Collection game with programmatic spawning
 - `games/sample_ai_game/` - Minimal tap-target template
 
@@ -175,5 +203,5 @@ Reference implementations:
 - **ARCHITECTURE.md** - System design and generation pipeline
 - **VISUAL_STYLE_GUIDE.md** - Art direction
 - **STYLE_GUIDE_GRID_PUZZLE.md** - Grid-based puzzle patterns (box_pusher style)
-- **STYLE_GUIDE_PLATFORMER.md** - Platformer & runner patterns (infinite_jump2 style)
+- **STYLE_GUIDE_PLATFORMER.md** - Platformer & runner patterns (infinite_jump style)
 - **README.md** - Project overview

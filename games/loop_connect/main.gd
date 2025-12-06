@@ -299,10 +299,10 @@ func _get_tile_position(col: int, row: int) -> Vector2:
 	)
 
 func _process(delta):
-	time_elapsed += delta
-	
+	time_elapsed += delta * speed_multiplier
+
 	# Check timeout
-	if time_elapsed >= GAME_DURATION:
+	if time_elapsed >= time_limit:
 		if not game_ended:
 			$sfx_lose.play()
 			end_game()  # Timeout = fail

@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://djjkmhv2jhf7y"]
 
-[ext_resource type="Script" uid="uid://rdlynktf31" path="res://games/infinite_jump2/goomba.gd" id="1_goomba"]
-[ext_resource type="Script" uid="uid://cr23rtrtyucyo" path="res://games/infinite_jump2/goomba_visual.gd" id="2_goomba_visual"]
+[ext_resource type="Script" uid="uid://rdlynktf31" path="res://games/infinite_jump/goomba.gd" id="1_goomba"]
+[ext_resource type="Script" uid="uid://cr23rtrtyucyo" path="res://games/infinite_jump/goomba_visual.gd" id="2_goomba_visual"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_goomba"]
 size = Vector2(24, 24)

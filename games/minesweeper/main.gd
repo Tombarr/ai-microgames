@@ -406,9 +406,9 @@ func _lose_game():
 func _process(delta):
 	if game_ended:
 		return
-	
-	time_elapsed += delta
-	
+
+	time_elapsed += delta * speed_multiplier
+
 	# Check timeout
-	if time_elapsed >= GAME_DURATION:
+	if time_elapsed >= time_limit:
 		_lose_game()
