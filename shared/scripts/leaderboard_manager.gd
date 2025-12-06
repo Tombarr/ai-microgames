@@ -1,6 +1,7 @@
 extends Node
 
 ## Leaderboard Manager: Handles online leaderboard via Supabase
+## Uses JavaScript fetch API on web builds to avoid gzip decompression issues
 
 # Supabase Configuration
 const SUPABASE_URL = "https://yyafrfrgayzgclwudkhp.supabase.co"
@@ -12,15 +13,21 @@ var leaderboard_data: Array[Dictionary] = []
 var http_request: HTTPRequest
 var is_loading: bool = false
 var is_submitting: bool = false
+var is_web: bool = false
 
 signal leaderboard_loaded(success: bool)
 signal score_submitted(success: bool, rank: int)
 
 func _ready():
-	# Create HTTP request node
-	http_request = HTTPRequest.new()
-	add_child(http_request)
-	http_request.request_completed.connect(_on_request_completed)
+	# Check if running in web browser
+	# JavaScriptBridge is only available in web exports
+	is_web = OS.has_feature("web")
+
+	if not is_web:
+		# Create HTTP request node for native builds
+		http_request = HTTPRequest.new()
+		add_child(http_request)
+		http_request.request_completed.connect(_on_request_completed)
 
 	_load_leaderboard()
 
@@ -31,25 +38,98 @@ func _load_leaderboard() -> void:
 	is_loading = true
 	print("Fetching leaderboard from Supabase...")
 
-	# Add cache-busting parameter to bypass service worker cached gzip responses
-	var cache_bust = str(Time.get_unix_time_from_system())
-	var url = SUPABASE_URL + "/rest/v1/" + TABLE_NAME + "?select=*&order=score.desc&limit=" + str(MAX_ENTRIES) + "&_cb=" + cache_bust
+	var url = SUPABASE_URL + "/rest/v1/" + TABLE_NAME + "?select=*&order=score.desc&limit=" + str(MAX_ENTRIES)
 
-	var headers = [
-		"apikey: " + SUPABASE_KEY,
-		"Authorization: Bearer " + SUPABASE_KEY,
-		"Content-Type: application/json",
-		"Accept-Encoding: identity",  # Request uncompressed response for web builds
-		"Cache-Control: no-cache, no-store, must-revalidate",  # Prevent caching
-		"Pragma: no-cache"  # HTTP/1.0 compatibility
-	]
+	if is_web:
+		# Use JavaScript fetch API to avoid Godot's gzip decompression issues
+		# Store result in window and poll for it
+		JavaScriptBridge.eval("window._godot_leaderboard_result = null; window._godot_leaderboard_loading = true;")
 
-	var error = http_request.request(url, headers, HTTPClient.METHOD_GET)
+		var js_code = """
+		console.log('JS LOAD: Starting fetch...');
+		fetch('%s', {
+			method: 'GET',
+			headers: {
+				'apikey': '%s',
+				'Authorization': 'Bearer %s',
+				'Content-Type': 'application/json'
+			}
+		})
+		.then(response => {
+			console.log('JS LOAD: Got response', response.status);
+			return response.json();
+		})
+		.then(data => {
+			console.log('JS LOAD: Got data', data.length, 'entries');
+			window._godot_leaderboard_result = JSON.stringify({success: true, data: data});
+			window._godot_leaderboard_loading = false;
+			console.log('JS LOAD: Result stored!');
+		})
+		.catch(error => {
+			console.log('JS LOAD: Error', error.message);
+			window._godot_leaderboard_result = JSON.stringify({success: false, error: error.message});
+			window._godot_leaderboard_loading = false;
+		});
+		""" % [url, SUPABASE_KEY, SUPABASE_KEY]
 
-	if error != OK:
-		push_error("Failed to send leaderboard request: " + str(error))
-		is_loading = false
+		JavaScriptBridge.eval(js_code)
+		print("JS fetch initiated for leaderboard load")
+
+		# Poll for result
+		_poll_load_result()
+	else:
+		# Use Godot HTTPRequest for native builds
+		var headers = [
+			"apikey: " + SUPABASE_KEY,
+			"Authorization: Bearer " + SUPABASE_KEY,
+			"Content-Type: application/json"
+		]
+
+		var error = http_request.request(url, headers, HTTPClient.METHOD_GET)
+
+		if error != OK:
+			push_error("Failed to send leaderboard request: " + str(error))
+			is_loading = false
+			leaderboard_loaded.emit(false)
+
+func _poll_load_result() -> void:
+	# Poll every frame until result is ready
+	while true:
+		await get_tree().process_frame
+		var loading = JavaScriptBridge.eval("window._godot_leaderboard_loading")
+		if not loading:
+			break
+
+	# Get the result
+	var result_str = str(JavaScriptBridge.eval("window._godot_leaderboard_result"))
+	print("Godot: Got load result, length: ", result_str.length())
+
+	is_loading = false
+
+	var json = JSON.new()
+	var parse_result = json.parse(result_str)
+
+	if parse_result != OK:
+		push_error("Failed to parse JS response: " + json.get_error_message())
 		leaderboard_loaded.emit(false)
+		return
+
+	var response = json.get_data()
+
+	if response.get("success", false):
+		var data = response.get("data", [])
+		leaderboard_data.clear()
+		for entry in data:
+			leaderboard_data.append(entry)
+		print("Loaded ", leaderboard_data.size(), " leaderboard entries from Supabase (via JS)")
+		leaderboard_loaded.emit(true)
+	else:
+		push_error("JS fetch failed: " + str(response.get("error", "Unknown error")))
+		leaderboard_loaded.emit(false)
+
+func _on_js_load_complete(args) -> void:
+	# Legacy callback - no longer used but kept for reference
+	pass
 
 func _on_request_completed(result: int, response_code: int, headers: PackedStringArray, body: PackedByteArray) -> void:
 	var body_string = body.get_string_from_utf8()
@@ -136,28 +216,116 @@ func add_entry(player_name: String, score: int) -> void:
 		"created_at": timestamp
 	}
 
-	# Add cache-busting parameter to bypass service worker
-	var cache_bust = str(Time.get_unix_time_from_system())
-	var url = SUPABASE_URL + "/rest/v1/" + TABLE_NAME + "?_cb=" + cache_bust
-
-	var headers = [
-		"apikey: " + SUPABASE_KEY,
-		"Authorization: Bearer " + SUPABASE_KEY,
-		"Content-Type: application/json",
-		"Prefer: return=representation",
-		"Accept-Encoding: identity",  # Request uncompressed response for web builds
-		"Cache-Control: no-cache, no-store, must-revalidate",
-		"Pragma: no-cache"
-	]
-
+	var url = SUPABASE_URL + "/rest/v1/" + TABLE_NAME
 	var body = JSON.stringify(new_entry)
 
-	var error = http_request.request(url, headers, HTTPClient.METHOD_POST, body)
+	if is_web:
+		# Use JavaScript fetch API to avoid Godot's gzip decompression issues
+		# Store result in window and poll for it
+		JavaScriptBridge.eval("window._godot_submit_result = null; window._godot_submit_loading = true;")
 
-	if error != OK:
-		push_error("Failed to send score submission request: " + str(error))
-		is_submitting = false
+		# Escape the body JSON properly for embedding in JS string
+		var escaped_body = body.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n")
+
+		var js_code = """
+		console.log('JS SUBMIT: Starting fetch...');
+		fetch('%s', {
+			method: 'POST',
+			headers: {
+				'apikey': '%s',
+				'Authorization': 'Bearer %s',
+				'Content-Type': 'application/json',
+				'Prefer': 'return=representation'
+			},
+			body: '%s'
+		})
+		.then(response => {
+			console.log('JS SUBMIT: Got response', response.status);
+			if (response.status === 201) {
+				return response.json().then(data => ({success: true, data: data}));
+			} else {
+				return response.text().then(text => ({success: false, error: text}));
+			}
+		})
+		.then(result => {
+			console.log('JS SUBMIT: Result', result);
+			window._godot_submit_result = JSON.stringify(result);
+			window._godot_submit_loading = false;
+			console.log('JS SUBMIT: Result stored!');
+		})
+		.catch(error => {
+			console.log('JS SUBMIT: Error', error.message);
+			window._godot_submit_result = JSON.stringify({success: false, error: error.message});
+			window._godot_submit_loading = false;
+		});
+		""" % [url, SUPABASE_KEY, SUPABASE_KEY, escaped_body]
+
+		JavaScriptBridge.eval(js_code)
+		print("JS fetch initiated for score submit")
+
+		# Poll for result
+		_poll_submit_result()
+	else:
+		# Use Godot HTTPRequest for native builds
+		var headers = [
+			"apikey: " + SUPABASE_KEY,
+			"Authorization: Bearer " + SUPABASE_KEY,
+			"Content-Type: application/json",
+			"Prefer: return=representation"
+		]
+
+		var error = http_request.request(url, headers, HTTPClient.METHOD_POST, body)
+
+		if error != OK:
+			push_error("Failed to send score submission request: " + str(error))
+			is_submitting = false
+			score_submitted.emit(false, -1)
+
+func _poll_submit_result() -> void:
+	# Poll every frame until result is ready
+	while true:
+		await get_tree().process_frame
+		var loading = JavaScriptBridge.eval("window._godot_submit_loading")
+		if not loading:
+			break
+
+	# Get the result
+	var result_str = str(JavaScriptBridge.eval("window._godot_submit_result"))
+	print("Godot: Got submit result, length: ", result_str.length())
+
+	is_submitting = false
+
+	var json = JSON.new()
+	var parse_result = json.parse(result_str)
+
+	if parse_result != OK:
+		push_error("Failed to parse JS submit response: " + json.get_error_message())
 		score_submitted.emit(false, -1)
+		return
+
+	var response = json.get_data()
+
+	if response.get("success", false):
+		print("Score submitted successfully! (via JS)")
+		# Reload leaderboard to get updated rankings
+		_load_leaderboard()
+		await leaderboard_loaded
+
+		# Find player's rank (simplified - just return 1 for now)
+		var rank = 1
+		for i in range(leaderboard_data.size()):
+			if leaderboard_data[i].has("id"):
+				rank = i + 1
+				break
+
+		score_submitted.emit(true, rank)
+	else:
+		push_error("JS submit failed: " + str(response.get("error", "Unknown error")))
+		score_submitted.emit(false, -1)
+
+func _on_js_submit_complete(args) -> void:
+	# Legacy callback - no longer used but kept for reference
+	pass
 
 func get_leaderboard() -> Array[Dictionary]:
 	return leaderboard_data.duplicate()

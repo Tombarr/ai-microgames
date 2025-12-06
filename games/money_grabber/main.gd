@@ -359,4 +359,3 @@ func _collect_ruby(ruby: Area2D) -> void:
 		game_active = false
 		$sfx_win.play()
 		end_game()
-
